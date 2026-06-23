@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Auth\Repositories\Contracts\UserRepositoryInterface;
 use App\Modules\Enrollment\Mail\InvitationMail;
 use App\Modules\Enrollment\Models\Invitation;
+use App\Modules\Enrollment\Repositories\Contracts\EnrollmentRepositoryInterface;
 use App\Modules\Enrollment\Repositories\Contracts\InvitationRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +18,7 @@ class InvitationService
     public function __construct(
         private readonly InvitationRepositoryInterface $invitationRepository,
         private readonly UserRepositoryInterface $userRepository,
+        private readonly EnrollmentRepositoryInterface $enrollmentRepository,
     ) {}
 
     public function invite(User $teacher, string $email, array $courseIds): void
@@ -54,6 +56,10 @@ class InvitationService
         }
 
         $this->userRepository->assignRole($user, 'student');
+
+        foreach ($invitation->course_ids as $courseId) {
+            $this->enrollmentRepository->enroll($user, $courseId);
+        }
 
         $invitation->update(['accepted_at' => now()]);
 

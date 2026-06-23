@@ -1,17 +1,13 @@
 'use client'
-import { createContext, useContext, useState, ReactNode } from 'react'
 
-type Role = 'student' | 'teacher'
+import { useAuth } from '@/contexts/AuthContext'
 
-const RoleContext = createContext<{ role: Role; setRole: (r: Role) => void }>({
-  role: 'student', setRole: () => {},
-})
-
-export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role>('student')
-  return <RoleContext.Provider value={{ role, setRole }}>{children}</RoleContext.Provider>
-}
+export type AppRole = 'student' | 'teacher'
 
 export function useRole() {
-  return useContext(RoleContext)
+  const { user } = useAuth()
+  const isTeacher = user?.roles.includes('teacher') ?? false
+  const role: AppRole = isTeacher ? 'teacher' : 'student'
+
+  return { role, isTeacher, isStudent: !isTeacher }
 }

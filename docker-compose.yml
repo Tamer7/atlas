@@ -19,8 +19,7 @@ services:
       LOG_CHANNEL: stderr
       LOG_LEVEL: debug
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      SESSION_DOMAIN: ${SESSION_DOMAIN:-localhost}
-      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:3000}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost,localhost:3000,127.0.0.1,127.0.0.1:3000}
       SESSION_COOKIE: atlas_session
       DB_CONNECTION: pgsql
       DB_HOST: postgres
@@ -53,6 +52,7 @@ services:
       - "${DB_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-atlas}"]
       interval: 5s

@@ -11,7 +11,8 @@ export function useLogin() {
       loginWithPassword(email, password),
     onSuccess: (user) => {
       queryClient.setQueryData(['auth', 'me'], user);
-      router.push('/dashboard');
+      const isTeacher = user.roles?.includes('teacher') ?? false;
+      router.replace(isTeacher ? '/teacher' : '/dashboard');
     },
   });
 }

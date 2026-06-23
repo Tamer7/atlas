@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+/**
+ * In the browser we call same-origin `/api/...` (proxied to Laravel via next.config rewrites)
+ * so session cookies stay on localhost:3000. SSR uses the direct API URL.
+ */
+const BASE_URL =
+  typeof window !== 'undefined'
+    ? ''
+    : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -14,7 +21,7 @@ export const apiClient = axios.create({
 
 let csrfInitialised = false;
 
-const ensureCsrf = async () => {
+export const ensureCsrf = async () => {
   if (!csrfInitialised) {
     await apiClient.get('/sanctum/csrf-cookie');
     csrfInitialised = true;

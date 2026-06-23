@@ -23,7 +23,10 @@ class InvitationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'You have been invited to Atlas');
+        return new Envelope(
+            to: [$this->invitation->email],
+            subject: 'You have been invited to Atlas',
+        );
     }
 
     public function content(): Content

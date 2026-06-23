@@ -2,19 +2,22 @@
 import { useRouter } from 'next/navigation'
 import { Sparkles, Clock, Play, ArrowRight, ListChecks } from 'lucide-react'
 import { Stat, Progress, Badge, CourseThumb } from '@/components/ui'
-import { MOCK } from '@/lib/mock-data'
+import { useCourses } from '@/hooks/courses/useCourses'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const courses = MOCK.courses.filter(c => c.lessonsDone > 0)
-  const upNext = MOCK.courses[0]
+  const { user } = useAuth()
+  const { data: courses = [] } = useCourses()
+  const firstName = user?.name?.split(' ')[0] ?? 'there'
+  const upNext = courses[0]
 
   return (
     <div>
       <div className="page-head">
         <div>
           <div className="crumbs">Tuesday, May 19</div>
-          <h1 className="h1">Welcome back, <span className="serif-italic">Sofia</span>.</h1>
+          <h1 className="h1">Welcome back, <span className="serif-italic">{firstName}</span>.</h1>
         </div>
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-secondary">Search lessons</button>
@@ -47,21 +50,23 @@ export default function DashboardPage() {
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, lineHeight: 1.05, marginBottom: 6, letterSpacing: '-0.01em' }}>
               Lesson 15 · <span className="serif-italic">Mixed Conditionals</span>
             </div>
-            <div className="muted" style={{ marginBottom: 20 }}>{upNext.title} · with {upNext.instructor}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, color: 'var(--muted)', fontSize: 12 }}>
-              <Clock size={12} /> 18:05 left
-              <span className="dot-sep" /> <Play size={12} /> 62% through
-              <span className="dot-sep" /> <ListChecks size={12} /> Quiz after
+            <div className="muted" style={{ marginBottom: 20 }}>
+              {upNext ? `${upNext.title} · with ${upNext.instructor.name}` : 'No courses enrolled yet.'}
             </div>
-            <Progress value={62} variant="brand" thick />
+            {upNext && (
+              <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, color: 'var(--muted)', fontSize: 12 }}>
+              <Clock size={12} /> Continue learning
+              <span className="dot-sep" /> <Play size={12} /> {upNext.progress}% through
+            </div>
+            <Progress value={upNext.progress} variant="brand" thick />
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-              <button className="btn btn-brand btn-lg" onClick={() => router.push('/courses/1/lessons/l15')}>
-                <Play size={16} /> Resume lesson
-              </button>
-              <button className="btn btn-secondary btn-lg" onClick={() => router.push('/courses/1')}>
+              <button className="btn btn-secondary btn-lg" onClick={() => router.push(`/courses/${upNext.id}`)}>
                 Course overview
               </button>
             </div>
+              </>
+            )}
           </div>
           <div className="grad-1" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 28, minHeight: 280 }}>
             <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,.18), transparent 50%)' }} />
@@ -84,7 +89,7 @@ export default function DashboardPage() {
             <button className="btn btn-ghost btn-sm" onClick={() => router.push('/courses')}>View all <ArrowRight size={12} /></button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {courses.slice(0, 4).map(c => (
+            {courses.map(c => (
               <button key={c.id} className="card" style={{ padding: 0, overflow: 'hidden', textAlign: 'left', border: '1px solid var(--line)', background: 'var(--card)', cursor: 'pointer' }}
                 onClick={() => router.push(`/courses/${c.id}`)}>
                 <CourseThumb course={c} />
@@ -92,7 +97,7 @@ export default function DashboardPage() {
                   <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>{c.tag}</div>
                   <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12, lineHeight: 1.3 }}>{c.title}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--muted)' }}>
-                    <span>{c.lessonsDone}/{c.lessonsTotal} lessons</span>
+                    <span>{c.lessons_done}/{c.lessons_total} lessons</span>
                     <span className="dot-sep" />
                     <span>{c.progress}%</span>
                   </div>

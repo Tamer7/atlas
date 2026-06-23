@@ -1,7 +1,8 @@
-interface Course { id: number; tag: string; title: string; glyph?: string }
+interface Course { id: string; tag: string; title: string; glyph?: string | null }
 export function CourseThumb({ course, size = 'md' }: { course: Course; size?: 'sm' | 'md' }) {
   const grads = ['grad-1', 'grad-2', 'grad-3', 'grad-4', 'grad-5', 'grad-6']
-  const grad = grads[course.id % grads.length]
+  const index = [...course.id].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+  const grad = grads[index % grads.length]
   return (
     <div className={`thumb ${grad}`} style={size === 'sm' ? { fontSize: 14 } : {}}>
       <div className="thumb-tag">{course.tag}</div>

@@ -1,21 +1,27 @@
 'use client'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Avatar, Badge, ArrowRight, Calendar, Plus, Flag, Clock } from '@/components/ui'
 import { MOCK } from '@/lib/mock-data'
+import { CreateCourseModal } from '@/components/teacher/CreateCourseModal'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function TeacherDashboardPage() {
   const router = useRouter()
+  const { user } = useAuth()
+  const [showCreate, setShowCreate] = useState(false)
+  const firstName = user?.name?.split(' ')[0] ?? 'there'
 
   return (
     <div>
       <div className="page-head">
         <div>
           <div className="crumbs">Tuesday, May 19</div>
-          <h1 className="h1">Good morning, <span className="serif-italic">Prof. Vale</span>.</h1>
+          <h1 className="h1">Good morning, <span className="serif-italic">{firstName}</span>.</h1>
         </div>
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-secondary"><Calendar size={14} /> May 2026</button>
-          <button className="btn btn-brand"><Plus size={14} /> Create</button>
+          <button className="btn btn-brand" onClick={() => setShowCreate(true)}><Plus size={14} /> Create</button>
         </div>
       </div>
 
@@ -155,6 +161,8 @@ export default function TeacherDashboardPage() {
           </div>
         </div>
       </div>
+
+      {showCreate && <CreateCourseModal onClose={() => setShowCreate(false)} />}
     </div>
   )
 }
