@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --paper: #F6F4EE;
+  --paper-2: #EFECE3;
+  --card: #FFFFFF;
+  --ink: #14130F;
+  --ink-2: #2A2823;
+  --muted: #6E6A60;
+  --faint: #A8A39A;
+  --line: #E5E1D6;
+  --line-2: #D7D2C4;
+  --brand: #2747E0;
+  --brand-2: #1F3AC2;
+  --brand-tint: #E6EAFB;
+  --accent: #D97757;
+  --accent-tint: #F6E6DC;
+  --success: #1F7A47;
+  --success-tint: #DCEEDE;
+  --warning: #B47A00;
+  --warning-tint: #F7EBC9;
+  --danger: #B43A2A;
+  --danger-tint: #F4DDD6;
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+  --sh-sm: 0 1px 2px rgba(20,19,15,.05);
+  --sh-md: 0 4px 12px rgba(20,19,15,.06), 0 1px 2px rgba(20,19,15,.04);
+  --sh-lg: 0 12px 36px rgba(20,19,15,.10), 0 2px 6px rgba(20,19,15,.05);
+  --sh-pop: 0 24px 60px rgba(20,19,15,.18);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-brand-tint: var(--brand-tint);
+  --color-accent: var(--accent);
+  --color-accent-tint: var(--accent-tint);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --font-family-sans: var(--font-sans);
+  --font-family-mono: var(--font-mono);
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+  --shadow-sm: var(--sh-sm);
+  --shadow-md: var(--sh-md);
+  --shadow-lg: var(--sh-lg);
+  --shadow-pop: var(--sh-pop);
+}
+
+html, body {
+  background: var(--paper);
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
