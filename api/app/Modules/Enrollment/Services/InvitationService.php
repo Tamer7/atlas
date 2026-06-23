@@ -8,6 +8,7 @@ use App\Modules\Enrollment\Mail\InvitationMail;
 use App\Modules\Enrollment\Models\Invitation;
 use App\Modules\Enrollment\Repositories\Contracts\InvitationRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -47,7 +48,7 @@ class InvitationService
             $user = $this->userRepository->create([
                 'name'     => explode('@', $invitation->email)[0],
                 'email'    => $invitation->email,
-                'password' => \Illuminate\Support\Str::random(32),
+                'password' => Hash::make(Str::random(32)),
                 'color'    => $this->randomColor(),
             ]);
         }

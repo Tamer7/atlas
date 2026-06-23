@@ -26,7 +26,7 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user) {
             $student = Role::firstOrCreate(['name' => 'student']);
-            $user->roles()->syncWithoutDetaching($student);
+            $user->roles()->syncWithoutDetaching([$student->id]);
         });
     }
 
@@ -34,11 +34,11 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user) {
             $teacher = Role::firstOrCreate(['name' => 'teacher']);
-            $user->roles()->syncWithoutDetaching($teacher);
+            $user->roles()->syncWithoutDetaching([$teacher->id]);
             // detach student if present
             $student = Role::where('name', 'student')->first();
             if ($student) {
-                $user->roles()->detach($student);
+                $user->roles()->detach($student->id);
             }
         });
     }

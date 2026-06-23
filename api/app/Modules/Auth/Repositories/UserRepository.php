@@ -54,6 +54,6 @@ class UserRepository implements UserRepositoryInterface
     public function assignRole(User $user, string $roleName): void
     {
         $role = Role::firstOrCreate(['name' => $roleName]);
-        $user->roles()->syncWithoutDetaching($role);
+        $user->roles()->syncWithoutDetaching([$role->id]);
     }
 }
