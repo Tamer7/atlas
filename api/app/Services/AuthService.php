@@ -24,7 +24,7 @@ class AuthService
             throw new AuthenticationException('Invalid credentials.');
         }
 
-        request()->session()->regenerate();
+        $this->regenerateSessionIfAvailable(request());
 
         return Auth::user();
     }
@@ -40,7 +40,7 @@ class AuthService
         ]);
 
         Auth::login($user);
-        request()->session()->regenerate();
+        $this->regenerateSessionIfAvailable(request());
 
         return $user;
     }
@@ -48,8 +48,11 @@ class AuthService
     public function logout(Request $request): void
     {
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
     }
 
     public function sendMagicLink(string $email): void
@@ -68,9 +71,16 @@ class AuthService
         }
 
         Auth::login($user);
-        request()->session()->regenerate();
+        $this->regenerateSessionIfAvailable(request());
 
         return $user;
+    }
+
+    private function regenerateSessionIfAvailable(Request $request): void
+    {
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
     }
 
     private function randomColor(): string

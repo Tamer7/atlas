@@ -12,13 +12,27 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->json('roles')->default('["student"]');
-            $table->string('color')->nullable();
-            $table->string('avatar_url')->nullable();
-            $table->text('bio')->nullable();
-            $table->string('timezone')->default('UTC');
-            $table->string('language', 10)->default('en');
-            $table->string('goal')->nullable();
+            if (! Schema::hasColumn('users', 'roles')) {
+                $table->json('roles')->default('["student"]');
+            }
+            if (! Schema::hasColumn('users', 'color')) {
+                $table->string('color')->nullable();
+            }
+            if (! Schema::hasColumn('users', 'avatar_url')) {
+                $table->string('avatar_url')->nullable();
+            }
+            if (! Schema::hasColumn('users', 'bio')) {
+                $table->text('bio')->nullable();
+            }
+            if (! Schema::hasColumn('users', 'timezone')) {
+                $table->string('timezone')->default('UTC');
+            }
+            if (! Schema::hasColumn('users', 'language')) {
+                $table->string('language', 10)->default('en');
+            }
+            if (! Schema::hasColumn('users', 'goal')) {
+                $table->string('goal')->nullable();
+            }
         });
     }
 
