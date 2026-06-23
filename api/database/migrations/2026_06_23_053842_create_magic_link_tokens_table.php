@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('magic_link_tokens', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('email')->index();
             $table->string('token');
             $table->timestamp('expires_at');
