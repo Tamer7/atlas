@@ -112,7 +112,6 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
 
   const [idx, setIdx] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
-  const [submitted, setSubmitted] = useState(false)
 
   const quiz = MOCK.quiz
   const q = quiz.questions[idx]
@@ -129,11 +128,6 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
   }
 
   void id // used to satisfy route param typing
-
-  if (submitted) {
-    handleSubmit()
-    return null
-  }
 
   const typeLabelMap: Record<string, string> = {
     mcq: 'Multiple choice',
@@ -365,7 +359,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               <Flag size={14} /> Flag for review
             </button>
             {idx === total - 1 ? (
-              <button className="btn btn-brand" onClick={() => setSubmitted(true)}>
+              <button className="btn btn-brand" onClick={handleSubmit}>
                 Submit quiz <Check size={14} />
               </button>
             ) : (

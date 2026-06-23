@@ -160,7 +160,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
       <h2 className="h2" style={{ marginBottom: 16 }}>Question-by-question breakdown</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {breakdown.map((b, i) => (
-          <div key={b.q.id} className="card card-pad">
+          <div key={b.q.id} className="q-item">
             <div className="row" style={{ marginBottom: 10 }}>
               <div
                 style={{
