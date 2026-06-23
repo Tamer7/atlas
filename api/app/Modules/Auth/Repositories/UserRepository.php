@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Modules\Auth\Repositories;
 
-use App\Models\MagicLinkToken;
 use App\Models\User;
-use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Modules\Auth\Models\MagicLinkToken;
+use App\Modules\Auth\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Support\Str;
 
 class UserRepository implements UserRepositoryInterface
@@ -26,8 +26,8 @@ class UserRepository implements UserRepositoryInterface
         $token = Str::random(64);
 
         MagicLinkToken::create([
-            'email' => $email,
-            'token' => hash('sha256', $token),
+            'email'      => $email,
+            'token'      => hash('sha256', $token),
             'expires_at' => now()->addMinutes(15),
         ]);
 
@@ -41,7 +41,7 @@ class UserRepository implements UserRepositoryInterface
             ->whereNull('used_at')
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return null;
         }
 

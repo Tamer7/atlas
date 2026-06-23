@@ -1,22 +1,20 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Auth;
+namespace App\Modules\Auth\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\Auth\MagicLinkRequest;
-use App\Http\Requests\Auth\RegisterRequest;
-use App\Http\Resources\UserResource;
-use App\Services\AuthService;
+use App\Modules\Auth\Requests\LoginRequest;
+use App\Modules\Auth\Requests\MagicLinkRequest;
+use App\Modules\Auth\Requests\RegisterRequest;
+use App\Modules\Auth\Resources\UserResource;
+use App\Modules\Auth\Services\AuthService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuthService $authService)
-    {
-    }
+    public function __construct(private readonly AuthService $authService) {}
 
     public function login(LoginRequest $request): JsonResponse
     {
@@ -27,7 +25,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'data' => ['user' => new UserResource($user)],
+            'data'    => ['user' => new UserResource($user)],
             'message' => 'Logged in successfully.',
         ]);
     }
@@ -37,7 +35,7 @@ class AuthController extends Controller
         $user = $this->authService->register($request->validated());
 
         return response()->json([
-            'data' => ['user' => new UserResource($user)],
+            'data'    => ['user' => new UserResource($user)],
             'message' => 'Account created successfully.',
         ], 201);
     }
@@ -74,7 +72,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'data' => ['user' => new UserResource($user)],
+            'data'    => ['user' => new UserResource($user)],
             'message' => 'Signed in successfully.',
         ]);
     }

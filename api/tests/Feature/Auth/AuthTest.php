@@ -89,7 +89,7 @@ test('magic link verify returns user when token valid', function () {
     // Get the raw token from the DB (it's stored hashed; we need to grab via the log or reset)
     // Simpler: call the repository directly
     $rawToken = \Illuminate\Support\Str::random(64);
-    \App\Models\MagicLinkToken::create([
+    \App\Modules\Auth\Models\MagicLinkToken::create([
         'email' => 'test@example.com',
         'token' => hash('sha256', $rawToken),
         'expires_at' => now()->addMinutes(15),
@@ -101,7 +101,7 @@ test('magic link verify returns user when token valid', function () {
 });
 
 test('expired magic link token returns 422', function () {
-    \App\Models\MagicLinkToken::create([
+    \App\Modules\Auth\Models\MagicLinkToken::create([
         'email' => 'test@example.com',
         'token' => hash('sha256', 'expiredtoken'),
         'expires_at' => now()->subMinute(),

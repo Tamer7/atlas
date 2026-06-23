@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Services;
+namespace App\Modules\Auth\Services;
 
 use App\Models\User;
-use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Modules\Auth\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,8 +17,8 @@ class AuthService
 
     public function login(array $credentials): User
     {
-        if (!Auth::attempt([
-            'email' => $credentials['email'],
+        if (! Auth::attempt([
+            'email'    => $credentials['email'],
             'password' => $credentials['password'],
         ])) {
             throw new AuthenticationException('Invalid credentials.');
@@ -32,11 +32,10 @@ class AuthService
     public function register(array $data): User
     {
         $user = $this->userRepository->create([
-            'name' => $data['name'],
-            'email' => $data['email'],
+            'name'     => $data['name'],
+            'email'    => $data['email'],
             'password' => Hash::make($data['password']),
-            'roles' => ['student'],
-            'color' => $this->randomColor(),
+            'color'    => $this->randomColor(),
         ]);
 
         Auth::login($user);
@@ -58,15 +57,14 @@ class AuthService
     public function sendMagicLink(string $email): void
     {
         $token = $this->userRepository->createMagicLinkToken($email);
-        // Phase 1: log only — email job queued in phase 2
-        logger()->info("Magic link for {$email}: " . env('FRONTEND_URL', 'http://localhost:3000') . "/auth/magic?token={$token}");
+        logger()->info('Magic link for ' . $email . ': ' . env('FRONTEND_URL', 'http://localhost:3000') . '/auth/magic?token=' . $token);
     }
 
     public function verifyMagicLink(string $token): User
     {
         $user = $this->userRepository->findByMagicLinkToken($token);
 
-        if (!$user) {
+        if (! $user) {
             throw new \InvalidArgumentException('Invalid or expired sign-in link.');
         }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Modules\Auth\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +13,6 @@ class MagicLinkToken extends Model
 
     protected $casts = [
         'expires_at' => 'datetime',
-        'used_at' => 'datetime',
+        'used_at'    => 'datetime',
     ];
 }
