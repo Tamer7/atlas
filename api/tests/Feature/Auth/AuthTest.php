@@ -1,9 +1,17 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Auth\Mail\MagicLinkMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->withoutMiddleware(ThrottleRequests::class);
+});
+
 
 test('user can register', function () {
     $response = $this->postJson('/api/v1/auth/register', [
@@ -75,12 +83,18 @@ test('authenticated user can logout', function () {
 });
 
 test('magic link can be requested for any email', function () {
+    Mail::fake();
+
     $this->postJson('/api/v1/auth/magic-link', ['email' => 'anyone@example.com'])
         ->assertOk()
         ->assertJsonPath('message', 'Sign-in link sent.');
+
+    Mail::assertSent(MagicLinkMail::class, fn ($mail) => $mail->hasTo('anyone@example.com'));
 });
 
 test('magic link verify returns user when token valid', function () {
+    Mail::fake();
+
     $user = User::factory()->create(['email' => 'test@example.com']);
 
     // Request a magic link to get a real token

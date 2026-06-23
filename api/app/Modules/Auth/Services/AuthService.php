@@ -6,8 +6,10 @@ use App\Models\User;
 use App\Modules\Auth\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
+use App\Modules\Auth\Mail\MagicLinkMail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class AuthService
 {
@@ -59,7 +61,7 @@ class AuthService
     public function sendMagicLink(string $email): void
     {
         $token = $this->userRepository->createMagicLinkToken($email);
-        logger()->info('Magic link for ' . $email . ': ' . config('app.frontend_url') . '/auth/magic?token=' . $token);
+        Mail::to($email)->send(new MagicLinkMail($email, $token));
     }
 
     public function verifyMagicLink(string $token): User
