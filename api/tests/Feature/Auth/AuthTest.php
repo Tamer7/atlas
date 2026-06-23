@@ -110,3 +110,27 @@ test('expired magic link token returns 422', function () {
     $this->getJson('/api/v1/auth/magic-link/verify?token=expiredtoken')
         ->assertUnprocessable();
 });
+
+test('registered user gets student role', function () {
+    $response = $this->postJson('/api/v1/auth/register', [
+        'name'                  => 'New Student',
+        'email'                 => 'newstudent@example.com',
+        'password'              => 'password123',
+        'password_confirmation' => 'password123',
+    ]);
+
+    $response->assertCreated();
+    $this->assertDatabaseHas('user_roles', [
+        'user_id' => \App\Models\User::where('email', 'newstudent@example.com')->value('id'),
+        'role_id' => \App\Models\Role::where('name', 'student')->value('id'),
+    ]);
+});
+
+test('user roles are returned as string array in api response', function () {
+    $user = \App\Models\User::factory()->create();
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/auth/me')
+        ->assertOk()
+        ->assertJsonPath('data.user.roles', ['student']);
+});

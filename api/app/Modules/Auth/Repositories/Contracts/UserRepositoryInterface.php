@@ -10,4 +10,5 @@ interface UserRepositoryInterface
     public function findByEmail(string $email): ?User;
     public function createMagicLinkToken(string $email): string;
     public function findByMagicLinkToken(string $token): ?User;
+    public function assignRole(User $user, string $roleName): void;
 }

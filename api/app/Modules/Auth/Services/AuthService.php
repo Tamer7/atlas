@@ -38,6 +38,8 @@ class AuthService
             'color'    => $this->randomColor(),
         ]);
 
+        $this->userRepository->assignRole($user, 'student');
+
         Auth::login($user);
         $this->regenerateSessionIfAvailable(request());
 

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Auth\Repositories;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Modules\Auth\Models\MagicLinkToken;
 use App\Modules\Auth\Repositories\Contracts\UserRepositoryInterface;
@@ -48,5 +49,11 @@ class UserRepository implements UserRepositoryInterface
         $record->update(['used_at' => now()]);
 
         return User::where('email', $record->email)->first();
+    }
+
+    public function assignRole(User $user, string $roleName): void
+    {
+        $role = Role::firstOrCreate(['name' => $roleName]);
+        $user->roles()->syncWithoutDetaching($role);
     }
 }

@@ -13,7 +13,7 @@ class UserResource extends JsonResource
             'id'         => $this->id,
             'name'       => $this->name,
             'email'      => $this->email,
-            'roles'      => $this->roles ?? ['student'],
+            'roles'      => $this->roles->pluck('name')->values()->all(),
             'color'      => $this->color,
             'avatar_url' => $this->avatar_url,
         ];
