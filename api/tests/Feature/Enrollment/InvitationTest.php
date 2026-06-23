@@ -104,7 +104,8 @@ test('existing user can accept invitation and gets logged in', function () {
 
     $this->getJson('/api/v1/invitations/accept?token=' . $rawToken)
         ->assertOk()
-        ->assertJsonPath('data.user.id', $existingUser->id);
+        ->assertJsonPath('data.user.id', $existingUser->id)
+        ->assertJsonPath('data.user.roles', ['student']);
 
     $this->assertCount(1, User::where('email', 'existing@example.com')->get());
 });

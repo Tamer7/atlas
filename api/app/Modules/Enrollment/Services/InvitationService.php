@@ -47,11 +47,12 @@ class InvitationService
             $user = $this->userRepository->create([
                 'name'     => explode('@', $invitation->email)[0],
                 'email'    => $invitation->email,
-                'password' => '',
+                'password' => \Illuminate\Support\Str::random(32),
                 'color'    => $this->randomColor(),
             ]);
-            $this->userRepository->assignRole($user, 'student');
         }
+
+        $this->userRepository->assignRole($user, 'student');
 
         $invitation->update(['accepted_at' => now()]);
 

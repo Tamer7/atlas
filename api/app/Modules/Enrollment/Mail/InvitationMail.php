@@ -17,7 +17,7 @@ class InvitationMail extends Mailable
 
     public function __construct(private readonly Invitation $invitation, string $rawToken)
     {
-        $this->acceptUrl = env('FRONTEND_URL', 'http://localhost:3000')
+        $this->acceptUrl = config('app.frontend_url')
             . '/invitation/accept?token=' . $rawToken;
     }
 

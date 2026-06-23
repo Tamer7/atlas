@@ -59,7 +59,7 @@ class AuthService
     public function sendMagicLink(string $email): void
     {
         $token = $this->userRepository->createMagicLinkToken($email);
-        logger()->info('Magic link for ' . $email . ': ' . env('FRONTEND_URL', 'http://localhost:3000') . '/auth/magic?token=' . $token);
+        logger()->info('Magic link for ' . $email . ': ' . config('app.frontend_url') . '/auth/magic?token=' . $token);
     }
 
     public function verifyMagicLink(string $token): User

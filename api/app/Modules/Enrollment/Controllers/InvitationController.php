@@ -4,10 +4,10 @@ namespace App\Modules\Enrollment\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Auth\Resources\UserResource;
+use App\Modules\Enrollment\Requests\AcceptInvitationRequest;
 use App\Modules\Enrollment\Requests\InviteStudentRequest;
 use App\Modules\Enrollment\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class InvitationController extends Controller
 {
@@ -24,10 +24,8 @@ class InvitationController extends Controller
         return response()->json(['message' => 'Invitation sent.']);
     }
 
-    public function accept(Request $request): JsonResponse
+    public function accept(AcceptInvitationRequest $request): JsonResponse
     {
-        $request->validate(['token' => ['required', 'string']]);
-
         try {
             $user = $this->invitationService->accept($request->query('token'));
         } catch (\InvalidArgumentException $e) {
