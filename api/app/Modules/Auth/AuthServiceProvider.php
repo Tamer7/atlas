@@ -12,4 +12,9 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
     }
+
+    public function boot(): void
+    {
+        $this->loadViewsFrom(resource_path('views/auth'), 'auth');
+    }
 }
