@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Badge, Field, SegControl } from '@/components/ui'
 import { Plus, Trash, Copy, ArrowLeft, Check, X, Code, FileText, Type, CheckCircle } from '@/components/ui'
+import { MOCK } from '@/lib/mock-data'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -361,7 +362,7 @@ function makeQuestion(type: QuestionType): Question {
 export default function QuizBuilderPage() {
   const router = useRouter()
   const [title, setTitle] = useState('Untitled Quiz')
-  const [course, setCourse] = useState('English B2')
+  const [course, setCourse] = useState(MOCK.courses[0].title as string)
   const [quizType, setQuizType] = useState('graded')
   const [timeLimit, setTimeLimit] = useState('10')
   const [attempts, setAttempts] = useState('1')
@@ -421,8 +422,8 @@ export default function QuizBuilderPage() {
         <div className="card card-pad" style={{ marginBottom: 24, display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <Field label="Course">
             <select className="select" value={course} onChange={e => setCourse(e.target.value)}>
-              {['English B2', 'Spanish A2', 'IELTS Writing Intensive', 'Public Speaking', 'Beginner Japanese'].map(c => (
-                <option key={c}>{c}</option>
+              {MOCK.courses.map(c => (
+                <option key={c.title}>{c.title as string}</option>
               ))}
             </select>
           </Field>
