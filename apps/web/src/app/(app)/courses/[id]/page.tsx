@@ -48,12 +48,11 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
               </div>
               <div className="card" style={{ padding: 0 }}>
                 {m.lessons.map((l, li) => {
-                  const lessonAny = l as Record<string, unknown>
-                  const isDone = !!lessonAny.done
-                  const isCurrent = !!lessonAny.current
-                  const isQuiz = !!lessonAny.quiz
-                  const isLocked = !!lessonAny.locked
-                  const hasQuiz = !!lessonAny.hasQuiz
+                  const isDone = 'done' in l && !!l.done
+                  const isCurrent = 'current' in l && !!l.current
+                  const isQuiz = 'quiz' in l && !!l.quiz
+                  const isLocked = 'locked' in l && !!l.locked
+                  const hasQuiz = 'hasQuiz' in l && !!l.hasQuiz
                   return (
                     <div key={l.id} style={{
                       display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',

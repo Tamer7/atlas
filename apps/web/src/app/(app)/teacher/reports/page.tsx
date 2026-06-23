@@ -1,4 +1,3 @@
-'use client'
 import { MOCK } from '@/lib/mock-data'
 import { Stat } from '@/components/ui'
 

@@ -38,8 +38,8 @@ export default function CoursesPage() {
             <div style={{ padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <Badge>{c.tag}</Badge>
-                {(c.progress as number) === 100 && <Badge tone="success">Done</Badge>}
-                {(c.progress as number) === 0 && <Badge tone="warning">Not started</Badge>}
+                {Number(c.progress) === 100 && <Badge tone="success">Done</Badge>}
+                {Number(c.progress) === 0 && <Badge tone="warning">Not started</Badge>}
               </div>
               <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8, lineHeight: 1.3 }}>{c.title}</div>
               <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14 }}>with {c.instructor}</div>

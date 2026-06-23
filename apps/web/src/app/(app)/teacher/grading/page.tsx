@@ -1,8 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Avatar, Badge, Button, Field } from '@/components/ui'
-import { Sparkle, Check, X, ArrowLeft, ArrowRight, ChevronDown } from '@/components/ui'
+import { Avatar, Badge, Button, Field, Sparkle, Check, X, ArrowLeft, ArrowRight, ChevronDown } from '@/components/ui'
 import { MOCK } from '@/lib/mock-data'
 
 // ─── Types ───────────────────────────────────────────────────────────────────

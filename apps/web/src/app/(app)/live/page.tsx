@@ -1,10 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Video, Play, Clock, PenTool } from '@/components/ui'
-import { Badge } from '@/components/ui'
+import { Video, Play, Clock, PenTool, Badge } from '@/components/ui'
 import { MOCK } from '@/lib/mock-data'
-import { RecordingPlayer, statusBadge } from '@/components/live/RecordingPlayer'
+import { RecordingPlayer } from '@/components/live/RecordingPlayer'
+import { statusBadge } from '@/components/live/liveUtils'
 
 type Recording = typeof MOCK.live.recordings[number]
 

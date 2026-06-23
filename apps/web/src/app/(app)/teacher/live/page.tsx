@@ -1,10 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, Broadcast, ArrowRight, Play, Users, PenTool, ChatBubble, Copy, Download } from '@/components/ui'
-import { Badge } from '@/components/ui'
+import { Calendar, Broadcast, ArrowRight, Play, Users, PenTool, ChatBubble, Copy, Download, Badge } from '@/components/ui'
 import { MOCK } from '@/lib/mock-data'
-import { RecordingPlayer, statusBadge } from '@/components/live/RecordingPlayer'
+import { RecordingPlayer } from '@/components/live/RecordingPlayer'
+import { statusBadge } from '@/components/live/liveUtils'
 import { ScheduleModal } from '@/components/live/ScheduleModal'
 
 type Recording = typeof MOCK.live.recordings[number]
@@ -59,7 +59,7 @@ export default function TeacherLivePage() {
       {live && (
         <div
           className="card elev"
-          style={{ padding: 24, marginBottom: 28, display: 'flex', gap: 20, alignItems: 'center', borderColor: '#F3C6C0', background: 'color-mix(in srgb, var(--danger-tint) 18%, white)' }}
+          style={{ padding: 24, marginBottom: 28, display: 'flex', gap: 20, alignItems: 'center', borderColor: '#F3C6C0', background: 'var(--danger-tint)' }}
         >
           <div
             className={live.thumb}

@@ -127,7 +127,7 @@ export default function TeacherDashboardPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div
                 className="card card-pad"
-                style={{ borderColor: 'var(--danger-tint)', background: 'color-mix(in srgb, var(--danger-tint) 25%, white)' }}
+                style={{ borderColor: 'var(--danger-tint)', background: 'var(--danger-tint)' }}
               >
                 <div className="row" style={{ gap: 10 }}>
                   <Flag size={16} color="var(--danger)" />
@@ -140,7 +140,7 @@ export default function TeacherDashboardPage() {
               </div>
               <div
                 className="card card-pad"
-                style={{ borderColor: 'var(--warning-tint)', background: 'color-mix(in srgb, var(--warning-tint) 25%, white)' }}
+                style={{ borderColor: 'var(--warning-tint)', background: 'var(--warning-tint)' }}
               >
                 <div className="row" style={{ gap: 10 }}>
                   <Clock size={16} color="var(--warning)" />

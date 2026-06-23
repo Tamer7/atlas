@@ -27,8 +27,8 @@ export default function LessonPage({
 
   useEffect(() => {
     if (!playing) return
-    const id = setInterval(() => setT(x => Math.min(duration, x + speed)), 1000)
-    return () => clearInterval(id)
+    const intervalId = setInterval(() => setT(x => Math.min(duration, x + speed)), 1000)
+    return () => clearInterval(intervalId)
   }, [playing, speed])
 
   const fmt = (s: number) =>
@@ -377,8 +377,7 @@ export default function LessonPage({
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {MOCK.discussion.map(d => {
-                    const disc = d as Record<string, unknown>
-                    const isInstructor = !!disc.instructor
+                    const isInstructor = 'instructor' in d && !!d.instructor
                     return (
                       <div
                         key={d.id}
@@ -433,14 +432,13 @@ export default function LessonPage({
             <div className="between" style={{ marginBottom: 10, padding: '0 4px' }}>
               <div className="eyebrow">Chapters</div>
               <div className="muted" style={{ fontSize: 11 }}>
-                {MOCK.chapters.filter(c => !!(c as Record<string, unknown>).done).length}/{MOCK.chapters.length}
+                {MOCK.chapters.filter(c => 'done' in c && !!c.done).length}/{MOCK.chapters.length}
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {MOCK.chapters.map(ch => {
-                const chap = ch as Record<string, unknown>
-                const isDone = !!chap.done
-                const isCurrent = !!chap.current
+                const isDone = 'done' in ch && !!ch.done
+                const isCurrent = 'current' in ch && !!ch.current
                 let icon: React.ReactNode
                 if (isDone) {
                   icon = <Check size={12} color="var(--success)" />
