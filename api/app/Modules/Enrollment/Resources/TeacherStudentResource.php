@@ -14,11 +14,13 @@ class TeacherStudentResource extends JsonResource
             'name'           => $this->name,
             'email'          => $this->email,
             'color'          => $this->color,
-            'courses_count'  => $this->whenCounted('enrollments'),
-            'attendance_pct' => 0,
-            'avg_score'      => 0,
-            'status'         => 'on_track',
-            'last_active_at' => null,
+            'courses_count'  => $this->teacherCoursesCount ?? 0,
+            'attendance_pct' => $this->attendancePct ?? 0,
+            'avg_score'      => $this->avgScore ?? 0,
+            'status'         => $this->studentStatus ?? 'on_track',
+            'last_active_at' => $this->lastActiveAt
+                ? (\Illuminate\Support\Carbon::parse($this->lastActiveAt))->toJSON()
+                : null,
             'flagged'        => false,
             'score_trend'    => [],
         ];

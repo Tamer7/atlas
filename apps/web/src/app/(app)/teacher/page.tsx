@@ -2,15 +2,57 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Avatar, Badge, ArrowRight, Calendar, Plus, Flag, Clock } from '@/components/ui'
-import { MOCK } from '@/lib/mock-data'
 import { CreateCourseModal } from '@/components/teacher/CreateCourseModal'
 import { useAuth } from '@/contexts/AuthContext'
+import { useDashboard } from '@/hooks/analytics/useDashboard'
+import { avatarColor, formatRelativeTime } from '@/lib/quiz/helpers'
+import type { GradingQueueItem } from '@/types/assessment'
+
+function queueTypeLabel(item: GradingQueueItem): string {
+  if (item.quiz_title.toLowerCase().includes('exam')) return 'Exam'
+  return 'Quiz'
+}
 
 export default function TeacherDashboardPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { data: dashboard, isLoading, isError } = useDashboard()
   const [showCreate, setShowCreate] = useState(false)
   const firstName = user?.name?.split(' ')[0] ?? 'there'
+
+  const stats = dashboard?.stats
+  const queue = dashboard?.grading_queue ?? []
+
+  const statCards = stats
+    ? [
+        {
+          label: 'Active students',
+          value: String(stats.active_students),
+          sub: `across ${stats.courses_count} course${stats.courses_count === 1 ? '' : 's'}`,
+        },
+        {
+          label: 'Awaiting grading',
+          value: String(stats.awaiting_grading),
+          sub: 'items in queue',
+          accent: true,
+          href: '/teacher/grading',
+        },
+        {
+          label: 'Avg. class score',
+          value: `${Math.round(stats.avg_class_score)}%`,
+          sub:
+            stats.avg_class_score_change != null
+              ? `${stats.avg_class_score_change >= 0 ? '↑' : '↓'} ${Math.abs(stats.avg_class_score_change)} pts this week`
+              : 'across all courses',
+        },
+        {
+          label: 'At-risk students',
+          value: String(stats.at_risk_students),
+          sub: 'need attention',
+          warn: true,
+        },
+      ]
+    : []
 
   return (
     <div>
@@ -25,14 +67,12 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
+      {isLoading && <div className="muted" style={{ marginBottom: 24 }}>Loading dashboard…</div>}
+      {isError && <div className="muted" style={{ marginBottom: 24 }}>Could not load dashboard data.</div>}
+
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-        {[
-          { label: 'Active students', value: '47', sub: 'across 4 courses' },
-          { label: 'Awaiting grading', value: '5', sub: 'items in queue', accent: true, href: '/teacher/grading' },
-          { label: 'Avg. class score', value: '82%', sub: '↑ 3 pts this week' },
-          { label: 'At-risk students', value: '2', sub: 'need attention', warn: true },
-        ].map((s, i) => (
+        {statCards.map((s, i) => (
           <div
             key={i}
             className="card card-pad-lg"
@@ -65,32 +105,35 @@ export default function TeacherDashboardPage() {
             </button>
           </div>
           <div className="card" style={{ padding: 0 }}>
-            {MOCK.gradingQueue.slice(0, 4).map((g, i) => (
+            {queue.length === 0 && !isLoading && (
+              <div className="card-pad muted" style={{ fontSize: 13 }}>No submissions awaiting grading.</div>
+            )}
+            {queue.slice(0, 4).map((g, i) => (
               <div
-                key={g.id}
+                key={g.attempt_id}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 14,
                   padding: '14px 18px',
-                  borderBottom: i < 3 ? '1px solid var(--line)' : '0',
+                  borderBottom: i < Math.min(queue.length, 4) - 1 ? '1px solid var(--line)' : '0',
                   cursor: 'pointer',
                 }}
                 onClick={() => router.push('/teacher/grading')}
               >
-                <Avatar name={g.student} color={g.color} />
+                <Avatar name={g.student.name} color={avatarColor(g.student.name)} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
-                    <b style={{ fontSize: 13 }}>{g.student}</b>
-                    <Badge tone={g.type === 'Exam' ? 'danger' : 'brand'}>{g.type}</Badge>
+                    <b style={{ fontSize: 13 }}>{g.student.name}</b>
+                    <Badge tone={queueTypeLabel(g) === 'Exam' ? 'danger' : 'brand'}>{queueTypeLabel(g)}</Badge>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{g.item} · {g.course} · {g.submitted}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    {g.quiz_title} · {g.course_title} · {formatRelativeTime(g.submitted_at)}
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>{g.needsReview} need review</div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                    {g.autoScore != null ? `${g.autoScore}/${g.total} auto` : 'Manual'}
-                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{g.pending_count} need review</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>Manual</div>
                 </div>
                 <ArrowRight size={14} color="var(--muted)" />
               </div>
@@ -101,7 +144,7 @@ export default function TeacherDashboardPage() {
         {/* Today + alerts */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
-            <h2 className="h2" style={{ marginBottom: 16 }}>Today's schedule</h2>
+            <h2 className="h2" style={{ marginBottom: 16 }}>Today&apos;s schedule</h2>
             <div className="card card-pad">
               {[
                 { time: '10:00', title: 'Office hours · English B2', who: '8 students booked', color: 'var(--brand)' },

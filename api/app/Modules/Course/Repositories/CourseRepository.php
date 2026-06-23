@@ -11,19 +11,21 @@ class CourseRepository implements CourseRepositoryInterface
 {
     public function find(string $id): ?Course
     {
-        return Course::with('instructor')->find($id);
+        return Course::with(['instructor', 'modules.lessons'])->find($id);
     }
 
     public function listForUser(User $user): Collection
     {
+        $query = Course::with(['instructor', 'modules.lessons']);
+
         if ($user->hasRole('teacher')) {
-            return Course::with('instructor')
+            return $query
                 ->where('instructor_id', $user->id)
                 ->orderBy('title')
                 ->get();
         }
 
-        return Course::with('instructor')
+        return $query
             ->whereHas('enrollments', fn ($q) => $q->where('user_id', $user->id))
             ->orderBy('title')
             ->get();

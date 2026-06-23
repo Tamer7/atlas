@@ -4,6 +4,7 @@ namespace App\Modules\Enrollment\Services;
 
 use App\Models\Course;
 use App\Models\User;
+use App\Modules\Analytics\Repositories\Contracts\AnalyticsRepositoryInterface;
 use App\Modules\Enrollment\Repositories\Contracts\EnrollmentRepositoryInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -13,18 +14,23 @@ class TeacherStudentService
 {
     public function __construct(
         private readonly EnrollmentRepositoryInterface $enrollmentRepository,
+        private readonly AnalyticsRepositoryInterface $analyticsRepository,
     ) {}
 
     public function listForTeacher(User $teacher): Collection
     {
-        return $this->enrollmentRepository->studentsForTeacher($teacher);
+        $students = $this->enrollmentRepository->studentsForTeacher($teacher);
+
+        return $this->analyticsRepository->enrichStudentsWithMetrics($students, $teacher);
     }
 
     public function listForCourse(User $teacher, string $courseId): Collection
     {
         $this->assertOwnsCourse($teacher, $courseId);
 
-        return $this->enrollmentRepository->studentsForCourse($courseId);
+        $students = $this->enrollmentRepository->studentsForCourse($courseId);
+
+        return $this->analyticsRepository->enrichStudentsWithMetrics($students, $teacher, $courseId);
     }
 
     public function addToCourse(User $teacher, string $courseId, string $email): User

@@ -21,9 +21,9 @@ class CourseResource extends JsonResource
                 'id'   => $this->instructor->id,
                 'name' => $this->instructor->name,
             ],
-            'lessons_total'  => 0,
-            'lessons_done'   => 0,
-            'progress'       => 0,
+            'lessons_total'  => $this->lessonsTotal ?? 0,
+            'lessons_done'   => $this->lessonsDone ?? 0,
+            'progress'       => $this->progressPct ?? 0,
         ];
     }
 }

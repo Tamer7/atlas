@@ -21,4 +21,6 @@ interface EnrollmentRepositoryInterface
     public function studentsForTeacher(User $teacher): Collection;
 
     public function coursesCountForUser(User $user): int;
+
+    public function coursesCountForUserInCourses(User $user, array $courseIds): int;
 }

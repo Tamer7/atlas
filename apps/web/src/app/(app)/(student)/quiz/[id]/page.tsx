@@ -1,38 +1,142 @@
 'use client'
-import { use, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge, Clock, ArrowLeft, ArrowRight, Flag, Check, Sparkle } from '@/components/ui'
-import { MOCK } from '@/lib/mock-data'
 import { MatchPairs } from '@/components/quiz/MatchPairs'
-
-// ---- Quiz page ----
+import { useQuiz } from '@/hooks/assessment/useQuiz'
+import { useAttempt, useSaveAnswers, useStartAttempt, useSubmitAttempt } from '@/hooks/assessment/useAttempt'
+import { answerToPayload, countWords, getMatchPairs, getMcqOptions, textAnswerValue } from '@/lib/quiz/helpers'
+import type { QuizQuestion } from '@/types/assessment'
 
 type MatchValue = Record<string, number>
-
 type Answers = Record<string, unknown>
+
+function parseAnswerValue(
+  question: QuizQuestion,
+  raw: Record<string, unknown> | null | undefined
+): unknown {
+  if (!raw) return undefined
+  switch (question.type) {
+    case 'mcq':
+      return raw.selected
+    case 'tf':
+      return raw.value
+    case 'fib':
+      return raw.blanks
+    case 'short':
+    case 'essay':
+      return raw.text
+    case 'match':
+      return raw.matches ?? raw.pairs
+    case 'code':
+      return raw.output
+    default:
+      return raw
+  }
+}
 
 export default function QuizPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
 
+  const { data: quiz, isLoading: quizLoading, isError: quizError } = useQuiz(id)
+  const startAttempt = useStartAttempt()
+  const startRequested = useRef(false)
+  const [attemptId, setAttemptId] = useState<string | null>(null)
   const [idx, setIdx] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
 
-  const quiz = MOCK.quiz
-  const q = quiz.questions[idx]
-  const total = quiz.questions.length
+  const { data: attempt } = useAttempt(attemptId ?? '')
+  const saveAnswers = useSaveAnswers(attemptId ?? '')
+  const submitAttempt = useSubmitAttempt(attemptId ?? '')
 
-  const answer = (val: unknown) => setAnswers(a => ({ ...a, [q.id]: val }))
-  const cur = answers[q.id]
+  useEffect(() => {
+    if (!quiz || attemptId || startRequested.current) return
+    startRequested.current = true
 
-  const handleSubmit = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('quiz-answers', JSON.stringify(answers))
-    }
-    router.push('/results/demo')
+    startAttempt.mutate(id, {
+      onSuccess: (started) => {
+        setAttemptId(started.id)
+        const seeded: Answers = {}
+        for (const a of started.answers ?? []) {
+          if (a.answer) {
+            const q = a.question
+            if (q) {
+              const parsed = parseAnswerValue(q, a.answer)
+              if (parsed !== undefined && parsed !== null) {
+                seeded[a.question_id] = parsed
+              } else if (q.type === 'short' || q.type === 'essay') {
+                seeded[a.question_id] = ''
+              }
+            }
+          }
+        }
+        if (Object.keys(seeded).length > 0) setAnswers(seeded)
+      },
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- start once per quiz load; startAttempt identity changes every render
+  }, [quiz, attemptId, id])
+
+  const questions = quiz?.questions ?? []
+  const q = questions[idx]
+  const total = questions.length
+  const isSubmitted = attempt?.status === 'submitted' || attempt?.status === 'graded'
+
+  const persistAnswer = (questionId: string, question: QuizQuestion, value: unknown) => {
+    if (!attemptId || isSubmitted) return
+    saveAnswers.mutate({
+      answers: [answerToPayload(questionId, question.type, value)],
+    })
   }
 
-  void id // used to satisfy route param typing
+  const answer = (val: unknown) => {
+    if (!q) return
+    setAnswers(a => ({ ...a, [q.id]: val }))
+    persistAnswer(q.id, q, val)
+  }
+
+  const handleSubmit = () => {
+    if (!attemptId || !quiz) return
+    const payload = questions
+      .filter(qq => answers[qq.id] != null)
+      .map(qq => answerToPayload(qq.id, qq.type, answers[qq.id]))
+
+    const doSubmit = () => submitAttempt.mutate()
+
+    if (payload.length > 0) {
+      saveAnswers.mutate({ answers: payload }, { onSuccess: doSubmit })
+    } else {
+      doSubmit()
+    }
+  }
+
+  if (quizLoading || (!attemptId && !startAttempt.isError)) {
+    return <div className="muted card-pad">Loading quiz…</div>
+  }
+
+  if (quizError || !quiz) {
+    return <div className="muted card-pad">Could not load this quiz.</div>
+  }
+
+  if (startAttempt.isError) {
+    const message =
+      (startAttempt.error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message ?? 'Could not start quiz attempt.'
+    return (
+      <div className="card card-pad">
+        <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{message}</p>
+        <button className="btn btn-secondary btn-sm" onClick={() => router.back()}>
+          Go back
+        </button>
+      </div>
+    )
+  }
+
+  if (!q) {
+    return <div className="muted card-pad">This quiz has no questions yet.</div>
+  }
+
+  const cur = answers[q.id]
 
   const typeLabelMap: Record<string, string> = {
     mcq: 'Multiple choice',
@@ -40,42 +144,64 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
     fib: 'Fill in the blank',
     short: 'Short answer',
     match: 'Match pairs',
+    essay: 'Essay',
+    code: 'Code',
+    upload: 'File upload',
   }
   const typeLabel = typeLabelMap[q.type] ?? q.type
+
+  const mcqOptions = getMcqOptions(q)
+  const matchPairs = getMatchPairs(q)
+  const fibBlanks = (q.config.blanks as string[] | undefined) ?? []
+  const blankCount = fibBlanks.length > 0 ? fibBlanks.length : 1
 
   return (
     <div>
       <div className="page-head">
         <div>
-          <div className="crumbs">
-            <a
-              href="#"
-              onClick={e => {
-                e.preventDefault()
-                router.push('/courses/1')
-              }}
-            >
-              English B2
-            </a>{' '}
-            · Module 3
-          </div>
+          <div className="crumbs">Quiz</div>
           <h1 className="h2">{quiz.title}</h1>
         </div>
         <div className="row">
           <div className="row" style={{ color: 'var(--muted)', fontSize: 13 }}>
-            <Clock size={14} /> ~{quiz.minutes} min
+            <Clock size={14} />
+            {quiz.time_limit_minutes ? `~${quiz.time_limit_minutes} min` : 'No time limit'}
           </div>
           <button
             className="btn btn-ghost"
-            onClick={() => router.push('/courses/1/lessons/l15')}
+            onClick={() => router.push(`/courses/${quiz.course_id}`)}
           >
             Exit
           </button>
         </div>
       </div>
 
+      {isSubmitted && attempt && (
+        <div className="card card-pad-lg" style={{ marginBottom: 24 }}>
+          <Badge tone={attempt.status === 'graded' ? 'success' : 'brand'}>
+            {attempt.status === 'graded' ? 'Graded' : 'Submitted'}
+          </Badge>
+          <div style={{ marginTop: 12, fontSize: 15 }}>
+            {attempt.total_score != null ? (
+              <>
+                Your score: <b>{attempt.total_score}</b>
+                {quiz.passing_score != null && (
+                  <span className="muted" style={{ marginLeft: 8 }}>
+                    (passing: {quiz.passing_score}%)
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="muted">Your answers are with your instructor for review.</span>
+            )}
+          </div>
+          {attempt.overall_feedback && (
+            <div style={{ marginTop: 10, fontSize: 13, color: 'var(--ink-2)' }}>{attempt.overall_feedback}</div>
+          )}
+        </div>
+      )}
+
       <div className="quiz-shell">
-        {/* Progress pips */}
         <div style={{ marginBottom: 28 }}>
           <div
             style={{
@@ -97,7 +223,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               gap: 4,
             }}
           >
-            {quiz.questions.map((qq, i) => (
+            {questions.map((qq, i) => (
               <button
                 key={qq.id}
                 onClick={() => setIdx(i)}
@@ -119,11 +245,10 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
           </div>
         </div>
 
-        {/* Question card */}
         <div className="card card-pad-lg">
           <div className="row" style={{ marginBottom: 14, gap: 8 }}>
             <Badge tone="brand">{typeLabel}</Badge>
-            <span className="muted" style={{ fontSize: 12 }}>2 points</span>
+            <span className="muted" style={{ fontSize: 12 }}>{q.points} point{q.points === 1 ? '' : 's'}</span>
           </div>
 
           <div
@@ -138,14 +263,13 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
             {q.prompt}
           </div>
 
-          {/* MCQ */}
           {q.type === 'mcq' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {q.options.map((o, i) => (
+              {mcqOptions.map((o, i) => (
                 <div
                   key={o.id}
                   className={`choice${cur === o.id ? ' selected' : ''}`}
-                  onClick={() => answer(o.id)}
+                  onClick={() => !isSubmitted && answer(o.id)}
                 >
                   <div className="letter">{String.fromCharCode(65 + i)}</div>
                   <div style={{ flex: 1, fontSize: 15, lineHeight: 1.5 }}>{o.text}</div>
@@ -154,14 +278,13 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
             </div>
           )}
 
-          {/* True / False */}
           {q.type === 'tf' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {([true, false] as const).map(v => (
                 <div
                   key={String(v)}
                   className={`choice${cur === v ? ' selected' : ''}`}
-                  onClick={() => answer(v)}
+                  onClick={() => !isSubmitted && answer(v)}
                   style={{ justifyContent: 'center', padding: 22 }}
                 >
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 26 }}>
@@ -172,18 +295,18 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
             </div>
           )}
 
-          {/* Fill in the blank */}
           {q.type === 'fib' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {q.blanks.map((_, i) => (
+              {Array.from({ length: blankCount }, (_, i) => (
                 <div key={i}>
                   <label className="label">Blank {i + 1}</label>
                   <input
                     className="input input-lg"
                     placeholder="Type your answer..."
                     value={((cur as string[] | undefined) ?? [])[i] ?? ''}
+                    disabled={isSubmitted}
                     onChange={e => {
-                      const arr = [...((cur as string[] | undefined) ?? ['', ''])]
+                      const arr = [...((cur as string[] | undefined) ?? Array(blankCount).fill(''))]
                       arr[i] = e.target.value
                       answer(arr)
                     }}
@@ -205,14 +328,14 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
             </div>
           )}
 
-          {/* Short answer */}
-          {q.type === 'short' && (
+          {(q.type === 'short' || q.type === 'essay') && (
             <div>
               <textarea
                 className="textarea"
-                rows={6}
-                placeholder="Write your answer in 2-3 sentences..."
-                value={(cur as string | undefined) ?? ''}
+                rows={q.type === 'essay' ? 10 : 6}
+                placeholder="Write your answer…"
+                value={textAnswerValue(cur)}
+                disabled={isSubmitted}
                 onChange={e => answer(e.target.value)}
               />
               <div
@@ -225,25 +348,32 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
                   color: 'var(--muted)',
                 }}
               >
-                <span>
-                  {((cur as string | undefined) ?? '').trim().split(/\s+/).filter(Boolean).length} words
-                </span>
+                <span>{countWords(cur)} words</span>
                 <span>Reviewed by your instructor</span>
               </div>
             </div>
           )}
 
-          {/* Match pairs */}
           {q.type === 'match' && (
             <MatchPairs
-              pairs={q.pairs}
+              pairs={matchPairs.map(p => ({ l: p.l, r: p.r ?? '' }))}
               value={(cur as MatchValue | undefined) ?? {}}
-              onChange={answer}
+              onChange={val => !isSubmitted && answer(val)}
+            />
+          )}
+
+          {q.type === 'code' && (
+            <textarea
+              className="textarea"
+              rows={8}
+              placeholder="Write your code…"
+              value={textAnswerValue(cur)}
+              disabled={isSubmitted}
+              onChange={e => answer(e.target.value)}
             />
           )}
         </div>
 
-        {/* Footer */}
         <div
           style={{
             display: 'flex',
@@ -260,17 +390,23 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
             <ArrowLeft size={14} /> Previous
           </button>
           <div className="row" style={{ gap: 8 }}>
-            <button className="btn btn-ghost">
+            <button className="btn btn-ghost" disabled>
               <Flag size={14} /> Flag for review
             </button>
-            {idx === total - 1 ? (
-              <button className="btn btn-brand" onClick={handleSubmit}>
-                Submit quiz <Check size={14} />
-              </button>
-            ) : (
-              <button className="btn btn-primary" onClick={() => setIdx(idx + 1)}>
-                Next <ArrowRight size={14} />
-              </button>
+            {!isSubmitted && (
+              idx === total - 1 ? (
+                <button
+                  className="btn btn-brand"
+                  onClick={handleSubmit}
+                  disabled={submitAttempt.isPending}
+                >
+                  {submitAttempt.isPending ? 'Submitting…' : 'Submit quiz'} <Check size={14} />
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => setIdx(idx + 1)}>
+                  Next <ArrowRight size={14} />
+                </button>
+              )
             )}
           </div>
         </div>

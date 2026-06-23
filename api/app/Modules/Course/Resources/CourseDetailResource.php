@@ -2,6 +2,7 @@
 
 namespace App\Modules\Course\Resources;
 
+use App\Modules\Curriculum\Resources\ModuleResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,10 +22,10 @@ class CourseDetailResource extends JsonResource
                 'id'   => $this->instructor->id,
                 'name' => $this->instructor->name,
             ],
-            'lessons_total'  => 0,
-            'lessons_done'   => 0,
-            'progress'       => 0,
-            'modules'        => [],
+            'lessons_total'  => $this->lessonsTotal ?? 0,
+            'lessons_done'   => $this->lessonsDone ?? 0,
+            'progress'       => $this->progressPct ?? 0,
+            'modules'        => ModuleResource::collection($this->whenLoaded('modules')),
         ];
     }
 }

@@ -22,4 +22,38 @@ export const API_ROUTES = {
   invitations: {
     accept: '/api/v1/invitations/accept',
   },
+  curriculum: {
+    modules: (courseId: string) => `/api/v1/courses/${courseId}/modules`,
+    createModule: (courseId: string) => `/api/v1/courses/${courseId}/modules`,
+    updateModule: (id: string) => `/api/v1/modules/${id}`,
+    deleteModule: (id: string) => `/api/v1/modules/${id}`,
+    createLesson: (moduleId: string) => `/api/v1/modules/${moduleId}/lessons`,
+    lesson: (id: string) => `/api/v1/lessons/${id}`,
+    updateLesson: (id: string) => `/api/v1/lessons/${id}`,
+    deleteLesson: (id: string) => `/api/v1/lessons/${id}`,
+    lessonProgress: (id: string) => `/api/v1/lessons/${id}/progress`,
+    lessonNotes: (id: string) => `/api/v1/lessons/${id}/notes`,
+    discussion: (id: string) => `/api/v1/lessons/${id}/discussion`,
+  },
+  assessment: {
+    quizzes: (courseId: string) => `/api/v1/courses/${courseId}/quizzes`,
+    createQuiz: (courseId: string) => `/api/v1/courses/${courseId}/quizzes`,
+    quiz: (id: string) => `/api/v1/quizzes/${id}`,
+    updateQuiz: (id: string) => `/api/v1/quizzes/${id}`,
+    deleteQuiz: (id: string) => `/api/v1/quizzes/${id}`,
+    startAttempt: (quizId: string) => `/api/v1/quizzes/${quizId}/start`,
+    attempt: (id: string) => `/api/v1/attempts/${id}`,
+    saveAnswers: (id: string) => `/api/v1/attempts/${id}/answers`,
+    submitAttempt: (id: string) => `/api/v1/attempts/${id}/submit`,
+    attemptResults: (id: string) => `/api/v1/attempts/${id}/results`,
+    gradingQueue: '/api/v1/teacher/grading',
+    gradeAnswer: (attemptId: string, answerId: string) =>
+      `/api/v1/teacher/grading/${attemptId}/answers/${answerId}`,
+    completeGrading: (attemptId: string) => `/api/v1/teacher/grading/${attemptId}/complete`,
+    teacherQuizzes: '/api/v1/teacher/quizzes',
+  },
+  analytics: {
+    dashboard: '/api/v1/teacher/dashboard',
+    reports: '/api/v1/teacher/reports',
+  },
 } as const;

@@ -53,4 +53,15 @@ class EnrollmentRepository implements EnrollmentRepositoryInterface
     {
         return Enrollment::where('user_id', $user->id)->count();
     }
+
+    public function coursesCountForUserInCourses(User $user, array $courseIds): int
+    {
+        if ($courseIds === []) {
+            return 0;
+        }
+
+        return Enrollment::where('user_id', $user->id)
+            ->whereIn('course_id', $courseIds)
+            ->count();
+    }
 }

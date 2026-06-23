@@ -1,3 +1,5 @@
+import type { Module } from './curriculum';
+
 export interface Instructor {
   id: string;
   name: string;
@@ -18,25 +20,14 @@ export interface Course {
 }
 
 export interface CourseDetail extends Course {
-  modules: CourseModule[];
+  modules: Module[];
 }
 
-export interface CourseModule {
-  id: string;
-  title: string;
-  order: number;
-  lessons: CourseLesson[];
-}
+/** @deprecated Use `Module` from `@/types/curriculum` */
+export type CourseModule = Module;
 
-export interface CourseLesson {
-  id: string;
-  number: number;
-  title: string;
-  duration_seconds: number;
-  status: 'done' | 'current' | 'locked' | 'available';
-  has_quiz: boolean;
-  is_locked: boolean;
-}
+/** @deprecated Use `Lesson` from `@/types/curriculum` */
+export type { Lesson as CourseLesson } from './curriculum';
 
 export interface TeacherStudent {
   id: string;

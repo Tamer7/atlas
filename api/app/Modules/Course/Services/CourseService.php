@@ -5,6 +5,8 @@ namespace App\Modules\Course\Services;
 use App\Models\Course;
 use App\Models\User;
 use App\Modules\Course\Repositories\Contracts\CourseRepositoryInterface;
+use App\Modules\Course\Support\CourseProgress;
+use App\Modules\Curriculum\Repositories\Contracts\LessonProgressRepositoryInterface;
 use App\Modules\Enrollment\Repositories\Contracts\EnrollmentRepositoryInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -14,11 +16,15 @@ class CourseService
     public function __construct(
         private readonly CourseRepositoryInterface $courseRepository,
         private readonly EnrollmentRepositoryInterface $enrollmentRepository,
+        private readonly LessonProgressRepositoryInterface $progressRepository,
     ) {}
 
     public function list(User $user): \Illuminate\Support\Collection
     {
-        return $this->courseRepository->listForUser($user);
+        $courses = $this->courseRepository->listForUser($user);
+        CourseProgress::attach($courses, $user, $this->progressRepository);
+
+        return $courses;
     }
 
     public function show(User $user, string $courseId): Course
@@ -30,6 +36,7 @@ class CourseService
         }
 
         $this->assertCanView($user, $course);
+        CourseProgress::attach($course, $user, $this->progressRepository);
 
         return $course;
     }

@@ -1,16 +1,11 @@
-import { MOCK } from '@/lib/mock-data'
+'use client'
 import { Stat } from '@/components/ui'
+import { useReports } from '@/hooks/analytics/useReports'
 
 export default function ReportsPage() {
-  const roster = MOCK.roster as readonly {
-    id: string; name: string; courses: number; attendance: number;
-    avgScore: number; status: string; last: string; flagged: boolean; color: string;
-  }[]
-
-  const totalStudents = roster.length
-  const avgScore = Math.round(roster.reduce((sum, s) => sum + s.avgScore, 0) / roster.length)
-  const avgAttendance = Math.round(roster.reduce((sum, s) => sum + s.attendance, 0) / roster.length)
-  const atRisk = roster.filter(s => s.status === 'at-risk').length
+  const { data: reports, isLoading, isError } = useReports()
+  const summary = reports?.summary
+  const courses = reports?.courses ?? []
 
   return (
     <div>
@@ -21,17 +16,64 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="card card-pad-lg" style={{ display: 'flex', gap: 32, marginBottom: 24 }}>
-        <Stat label="Total Students" value={String(totalStudents)} sub="enrolled" />
-        <Stat label="Avg Score" value={`${avgScore}%`} sub="across all assessments" accent />
-        <Stat label="Avg Attendance" value={`${avgAttendance}%`} sub="session attendance" />
-        <Stat label="At-Risk Students" value={String(atRisk)} sub="need attention" />
-      </div>
+      {isLoading && <div className="muted" style={{ marginBottom: 24 }}>Loading reports…</div>}
+      {isError && <div className="muted" style={{ marginBottom: 24 }}>Could not load reports.</div>}
 
-      <div className="card card-pad-lg" style={{ textAlign: 'center', padding: 64, color: 'var(--muted)' }}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
-        <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>Analytics coming soon</div>
-        <div>Course performance charts and student progress reports will appear here.</div>
+      {summary && (
+        <div className="card card-pad-lg" style={{ display: 'flex', gap: 32, marginBottom: 24 }}>
+          <Stat label="Total Students" value={String(summary.total_students)} sub="enrolled" />
+          <Stat label="Avg Score" value={`${Math.round(summary.avg_score)}%`} sub="across all assessments" accent />
+          <Stat label="Avg Attendance" value={`${Math.round(summary.avg_attendance)}%`} sub="session attendance" />
+          <Stat label="At-Risk Students" value={String(summary.at_risk_students)} sub="need attention" />
+        </div>
+      )}
+
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr',
+          gap: 12,
+          padding: '12px 18px',
+          borderBottom: '1px solid var(--line)',
+          fontSize: 11,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: 'var(--muted)',
+        }}>
+          <span>Course</span>
+          <span>Students</span>
+          <span>Avg score</span>
+          <span>Attendance</span>
+          <span>Completion</span>
+          <span>At-risk</span>
+        </div>
+        {courses.length === 0 && !isLoading && (
+          <div className="card-pad muted" style={{ fontSize: 13 }}>No course data available yet.</div>
+        )}
+        {courses.map(course => (
+          <div
+            key={course.id}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr',
+              gap: 12,
+              padding: '14px 18px',
+              borderBottom: '1px solid var(--line)',
+              fontSize: 13,
+              alignItems: 'center',
+            }}
+          >
+            <b>{course.title}</b>
+            <span>{course.students_count}</span>
+            <span>{Math.round(course.avg_score)}%</span>
+            <span>{Math.round(course.avg_attendance)}%</span>
+            <span>{Math.round(course.completion_pct)}%</span>
+            <span style={{ color: course.at_risk_count > 0 ? 'var(--danger)' : 'var(--muted)' }}>
+              {course.at_risk_count}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )

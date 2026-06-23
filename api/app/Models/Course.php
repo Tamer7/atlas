@@ -30,4 +30,14 @@ class Course extends Model
     {
         return $this->hasMany(Enrollment::class);
     }
+
+    public function modules(): HasMany
+    {
+        return $this->hasMany(Module::class)->orderBy('sort_order');
+    }
+
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class);
+    }
 }
