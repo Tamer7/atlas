@@ -1,5 +1,6 @@
 export function Sparkline({ values = [], positive = true }: { values?: number[]; positive?: boolean }) {
   const w = 64, h = 22
+  if (values.length < 2) return <svg width={w} height={h} />
   const min = Math.min(...values), max = Math.max(...values)
   const range = max - min || 1
   const pts = values.map((v, i) => {
