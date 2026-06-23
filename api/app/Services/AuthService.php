@@ -59,7 +59,7 @@ class AuthService
     {
         $token = $this->userRepository->createMagicLinkToken($email);
         // Phase 1: log only — email job queued in phase 2
-        logger()->info("Magic link for {$email}: " . url("/auth/magic?token={$token}"));
+        logger()->info("Magic link for {$email}: " . env('FRONTEND_URL', 'http://localhost:3000') . "/auth/magic?token={$token}");
     }
 
     public function verifyMagicLink(string $token): User
@@ -85,6 +85,7 @@ class AuthService
 
     private function randomColor(): string
     {
-        return fake()->randomElement(['#2747E0', '#1F7A47', '#D97757', '#B47A00', '#5C3A1E']);
+        $colors = ['#2747E0', '#1F7A47', '#D97757', '#B47A00', '#5C3A1E'];
+        return $colors[array_rand($colors)];
     }
 }
