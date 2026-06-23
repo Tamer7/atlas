@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Play, Pause, CC, Maximize, Broadcast, X } from '@/components/ui'
+import { Play, Pause, CC, Maximize, Broadcast, X, Badge } from '@/components/ui'
 
 type Recording = {
   id: string
@@ -25,6 +25,12 @@ function fmtTime(s: number): string {
   return (h ? h + ':' : '') + String(m).padStart(h ? 2 : 1, '0') + ':' + String(sec).padStart(2, '0')
 }
 
+export function statusBadge(s: string) {
+  if (s === 'live') return <span className="live-pill-sm">LIVE NOW</span>
+  if (s === 'soon') return <Badge tone="warning">Starts soon</Badge>
+  return <Badge>Scheduled</Badge>
+}
+
 export function RecordingPlayer({ rec, onClose }: { rec: Recording; onClose: () => void }) {
   const [playing, setPlaying] = useState(true)
   const [t, setT] = useState(0)
@@ -32,7 +38,7 @@ export function RecordingPlayer({ rec, onClose }: { rec: Recording; onClose: () 
 
   useEffect(() => {
     if (!playing) return
-    const id = setInterval(() => setT(x => Math.min(dur, x + 1)), 250)
+    const id = setInterval(() => setT(x => Math.min(dur, x + 1)), 1000)
     return () => clearInterval(id)
   }, [playing, dur])
 

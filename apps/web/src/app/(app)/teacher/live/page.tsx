@@ -4,16 +4,10 @@ import { useRouter } from 'next/navigation'
 import { Calendar, Broadcast, ArrowRight, Play, Users, PenTool, ChatBubble, Copy, Download } from '@/components/ui'
 import { Badge } from '@/components/ui'
 import { MOCK } from '@/lib/mock-data'
-import { RecordingPlayer } from '@/components/live/RecordingPlayer'
+import { RecordingPlayer, statusBadge } from '@/components/live/RecordingPlayer'
 import { ScheduleModal } from '@/components/live/ScheduleModal'
 
 type Recording = typeof MOCK.live.recordings[number]
-
-function statusBadge(s: string) {
-  if (s === 'live') return <span className="live-pill-sm">LIVE NOW</span>
-  if (s === 'soon') return <Badge tone="warning">Starts soon</Badge>
-  return <Badge>Scheduled</Badge>
-}
 
 export default function TeacherLivePage() {
   const router = useRouter()
