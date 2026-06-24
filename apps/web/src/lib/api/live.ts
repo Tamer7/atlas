@@ -36,6 +36,11 @@ export const fetchLiveClassesForCourse = async (courseId: string): Promise<LiveC
   return data.data
 }
 
+export const fetchTeacherLiveClasses = async (): Promise<LiveClass[]> => {
+  const { data } = await apiClient.get<ApiResponse<LiveClass[]>>('/api/v1/teacher/live-classes')
+  return data.data
+}
+
 export const createLiveClass = async (payload: CreateLiveClassPayload): Promise<LiveClass> => {
   const { data } = await apiClient.post<ApiResponse<LiveClass>>('/api/v1/live-classes', payload)
   return data.data

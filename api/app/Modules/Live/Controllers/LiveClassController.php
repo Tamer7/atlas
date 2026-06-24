@@ -26,6 +26,15 @@ class LiveClassController extends Controller
         ]);
     }
 
+    public function teacherIndex(): JsonResponse
+    {
+        $classes = $this->repo->listForTeacher(request()->user());
+
+        return response()->json([
+            'data' => LiveClassResource::collection($classes),
+        ]);
+    }
+
     public function store(CreateLiveClassRequest $request): JsonResponse
     {
         $class = $this->liveService->create($request->validated(), $request->user());

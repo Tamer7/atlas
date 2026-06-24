@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   fetchLiveClassesForCourse,
+  fetchTeacherLiveClasses,
   createLiveClass,
   startLiveClass,
   endLiveClass,
@@ -8,7 +9,15 @@ import {
 } from '@/lib/api/live'
 
 export const liveKeys = {
+  teacher: ['live-classes', 'teacher'] as const,
   forCourse: (courseId: string) => ['live-classes', 'course', courseId] as const,
+}
+
+export function useTeacherLiveClasses() {
+  return useQuery({
+    queryKey: liveKeys.teacher,
+    queryFn: fetchTeacherLiveClasses,
+  })
 }
 
 export function useLiveClassesForCourse(courseId: string) {

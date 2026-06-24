@@ -8,6 +8,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('live-classes/{id}/token', [LiveClassController::class, 'token']);
 
     Route::middleware('role:teacher')->group(function () {
+        Route::get('teacher/live-classes', [LiveClassController::class, 'teacherIndex']);
         Route::post('live-classes', [LiveClassController::class, 'store']);
         Route::post('live-classes/{id}/start', [LiveClassController::class, 'start']);
         Route::post('live-classes/{id}/end', [LiveClassController::class, 'end']);
