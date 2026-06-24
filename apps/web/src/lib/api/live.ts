@@ -25,8 +25,10 @@ export interface CreateLiveClassPayload {
 
 export interface LiveToken {
   token: string
+  role: 'teacher' | 'student'
   server_url: string
   room_name: string
+  title: string
 }
 
 export const fetchLiveClassesForCourse = async (courseId: string): Promise<LiveClass[]> => {

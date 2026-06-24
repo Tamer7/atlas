@@ -43,7 +43,7 @@ export default function LiveClassesPage() {
               </div>
               <button
                 className="btn btn-brand btn-lg"
-                onClick={() => router.push(`/live/room?classId=${liveNow.id}&role=student`)}
+                onClick={() => router.push(`/live/room?classId=${liveNow.id}`)}
               >
                 <Video size={16} /> Join live class
               </button>

@@ -63,7 +63,7 @@ class LiveClassController extends Controller
         }
 
         try {
-            $token = $this->liveService->generateToken($class, request()->user());
+            ['token' => $token, 'role' => $role] = $this->liveService->generateToken($class, request()->user());
         } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         }
@@ -71,6 +71,7 @@ class LiveClassController extends Controller
         return response()->json([
             'data' => [
                 'token'      => $token,
+                'role'       => $role,
                 'server_url' => config('services.livekit.url'),
                 'room_name'  => $class->room_name,
                 'title'      => $class->title,

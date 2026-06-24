@@ -37,7 +37,7 @@ function StartClassModal({
     try {
       const liveClass = await createMutation.mutateAsync({ course_id: courseId, title: title.trim() })
       onClose()
-      router.push(`/live/room?classId=${liveClass.id}&role=teacher`)
+      router.push(`/live/room?classId=${liveClass.id}`)
     } catch {
       setError('Could not create the class. Please try again.')
     }
@@ -158,7 +158,7 @@ export default function TeacherLivePage() {
               {liveNow.course?.title} · Live session in progress
             </div>
           </div>
-          <button className="btn btn-brand btn-lg" onClick={() => router.push(`/live/room?classId=${liveNow.id}&role=teacher`)}>
+          <button className="btn btn-brand btn-lg" onClick={() => router.push(`/live/room?classId=${liveNow.id}`)}>
             <ArrowRight size={16} /> Rejoin class
           </button>
         </div>
@@ -194,7 +194,7 @@ export default function TeacherLivePage() {
                 <button className="btn btn-ghost btn-sm">Edit</button>
                 <button
                   className="btn btn-secondary btn-sm"
-                  onClick={() => router.push(`/live/room?classId=${u.id}&role=teacher`)}
+                  onClick={() => router.push(`/live/room?classId=${u.id}`)}
                 >
                   Start
                 </button>

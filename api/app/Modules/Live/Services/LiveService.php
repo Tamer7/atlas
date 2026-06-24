@@ -36,7 +36,7 @@ class LiveService
         ]);
     }
 
-    public function generateToken(LiveClass $class, User $user): string
+    public function generateToken(LiveClass $class, User $user): array
     {
         $isTeacher = $user->id === $class->teacher_id;
 
@@ -54,7 +54,7 @@ class LiveService
             $grant->setRoomAdmin();
         }
 
-        return (new AccessToken(
+        $jwt = (new AccessToken(
             config('services.livekit.api_key'),
             config('services.livekit.api_secret'),
         ))
@@ -66,6 +66,11 @@ class LiveService
             )
             ->setGrant($grant)
             ->toJwt();
+
+        return [
+            'token' => $jwt,
+            'role'  => $isTeacher ? 'teacher' : 'student',
+        ];
     }
 
     public function start(LiveClass $class, User $teacher): LiveClass

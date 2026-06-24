@@ -24,6 +24,7 @@ import { apiClient } from '@/lib/api/client'
 
 interface TokenData {
   token: string
+  role: 'teacher' | 'student'
   server_url: string
   room_name: string
   title: string
@@ -38,7 +39,6 @@ const colorFor = (identity: string) =>
 export function LiveRoomClient() {
   const searchParams = useSearchParams()
   const classId = searchParams.get('classId')
-  const role = (searchParams.get('role') ?? 'student') as 'teacher' | 'student'
 
   const [tokenData, setTokenData] = useState<TokenData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -76,7 +76,7 @@ export function LiveRoomClient() {
       video
       style={{ display: 'contents' }}
     >
-      <LiveRoomInner role={role} classId={classId!} title={tokenData.title} />
+      <LiveRoomInner role={tokenData.role} classId={classId!} title={tokenData.title} />
     </LiveKitRoom>
   )
 }
