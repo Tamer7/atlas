@@ -13,8 +13,6 @@ class LiveServiceProvider extends ServiceProvider
         $this->app->bind(LiveClassRepositoryInterface::class, LiveClassRepository::class);
     }
 
-    public function boot(): void
-    {
-        $this->loadRoutesFrom(__DIR__ . '/Routes/api.php');
-    }
+    public function boot(): void {}
+
 }
