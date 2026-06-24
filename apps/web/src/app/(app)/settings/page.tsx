@@ -3,11 +3,14 @@ import { useState } from 'react'
 import { Avatar, Field, Toggle, Badge, SegControl } from '@/components/ui'
 import { Mail, Lock } from '@/components/ui'
 import { useRole } from '@/contexts/RoleContext'
-import { MOCK } from '@/lib/mock-data'
+import { useAuth } from '@/contexts/AuthContext'
 
 // ── Profile Tab ────────────────────────────────────────────────────────────────
 function ProfileTab({ role }: { role: 'student' | 'teacher' }) {
-  const user = MOCK.user
+  const { user } = useAuth()
+  const name = user?.name ?? ''
+  const email = user?.email ?? ''
+  const color = user?.color ?? '#2747E0'
   return (
     <div className="col" style={{ gap: 24 }}>
       <section className="card card-pad-lg">
@@ -15,7 +18,7 @@ function ProfileTab({ role }: { role: 'student' | 'teacher' }) {
         <p className="muted" style={{ fontSize: 13, marginBottom: 20 }}>How you appear across Atlas.</p>
 
         <div className="row" style={{ gap: 20, marginBottom: 24 }}>
-          <Avatar name={user.name} color={user.color} size="lg" />
+          <Avatar name={name} color={color} size="lg" />
           <div>
             <button className="btn btn-secondary btn-sm">Upload photo</button>
             <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>PNG or JPG · max 2MB</div>
@@ -23,9 +26,9 @@ function ProfileTab({ role }: { role: 'student' | 'teacher' }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Field label="Full name"><input className="input" defaultValue={user.name} /></Field>
-          <Field label="Display name"><input className="input" defaultValue={user.name.split(' ')[0]} /></Field>
-          <Field label="Email"><input className="input" defaultValue={user.email} /></Field>
+          <Field label="Full name"><input className="input" defaultValue={name} /></Field>
+          <Field label="Display name"><input className="input" defaultValue={name.split(' ')[0]} /></Field>
+          <Field label="Email"><input className="input" defaultValue={email} /></Field>
           <Field label="Time zone">
             <select className="select">
               <option>Europe/Madrid (GMT+2)</option>
@@ -73,7 +76,7 @@ function ProfileTab({ role }: { role: 'student' | 'teacher' }) {
 
 // ── Account & Security Tab ─────────────────────────────────────────────────────
 function AccountTab() {
-  const user = MOCK.user
+  const { user } = useAuth()
   return (
     <div className="col" style={{ gap: 24 }}>
       <section className="card card-pad-lg">
@@ -85,7 +88,7 @@ function AccountTab() {
             <Mail size={20} color="var(--brand)" />
             <div style={{ flex: 1 }}>
               <b style={{ fontSize: 13 }}>Magic link sign-in</b>
-              <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Get a one-time link emailed to {user.email}.</div>
+              <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Get a one-time link emailed to {user?.email ?? '…'}.</div>
             </div>
             <Badge tone="success">Enabled</Badge>
           </div>
