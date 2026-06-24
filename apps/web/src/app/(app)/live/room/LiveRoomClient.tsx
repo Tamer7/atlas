@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   LiveKitRoom,
@@ -7,7 +7,9 @@ import {
   useLocalParticipant,
   useTracks,
   AudioTrack,
+  VideoTrack,
   useConnectionState,
+  useChat,
   isTrackReference,
 } from '@livekit/components-react'
 import { Track, ConnectionState } from 'livekit-client'
@@ -16,18 +18,20 @@ import {
   Mic, MicOff, Video, VideoOff, ScreenShare, Hand, Grid,
   PhoneOff, Square, Dot, PenTool, Users, ChatBubble,
 } from '@/components/ui'
-import { MOCK } from '@/lib/mock-data'
 import { Whiteboard } from '@/components/live/Whiteboard'
 import { VideoTile, type Participant } from '@/components/live/VideoTile'
 import { apiClient } from '@/lib/api/client'
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface TokenData {
   token: string
   server_url: string
   room_name: string
+  title: string
 }
+
+const COLORS = ['#2747E0', '#C24A3A', '#1F7A47', '#6B2E84', '#B47A00', '#0891B2']
+const colorFor = (identity: string) =>
+  COLORS[identity.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length]
 
 // ─── Outer shell: fetches token then mounts LiveKitRoom ───────────────────────
 
@@ -40,10 +44,7 @@ export function LiveRoomClient() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!classId) {
-      setError('No class ID provided.')
-      return
-    }
+    if (!classId) { setError('No class ID provided.'); return }
 
     apiClient.post(`/api/v1/live-classes/${classId}/token`)
       .then(res => setTokenData(res.data.data))
@@ -75,43 +76,60 @@ export function LiveRoomClient() {
       video
       style={{ display: 'contents' }}
     >
-      <LiveRoomInner role={role} classId={classId!} />
+      <LiveRoomInner role={role} classId={classId!} title={tokenData.title} />
     </LiveKitRoom>
   )
 }
 
 // ─── Inner component: uses LiveKit hooks ─────────────────────────────────────
 
-function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId: string }) {
+function LiveRoomInner({
+  role,
+  classId,
+  title,
+}: {
+  role: 'teacher' | 'student'
+  classId: string
+  title: string
+}) {
   const router = useRouter()
   const connectionState = useConnectionState()
   const { localParticipant } = useLocalParticipant()
   const remoteParticipants = useParticipants()
-  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare])
+  const cameraTracks = useTracks([Track.Source.Camera])
+  const screenTracks = useTracks([Track.Source.ScreenShare])
   const audioTracks = useTracks([Track.Source.Microphone])
+  const { chatMessages, send: sendChat } = useChat()
 
   const [mic, setMic] = useState(true)
   const [cam, setCam] = useState(true)
-  const [mode, setMode] = useState<'speaker' | 'grid' | 'whiteboard' | 'screen'>('speaker')
+  const [mode, setMode] = useState<'speaker' | 'grid' | 'whiteboard'>('speaker')
   const [sharing, setSharing] = useState(false)
   const [recording, setRecording] = useState(false)
   const [hand, setHand] = useState(false)
   const [panel, setPanel] = useState<'none' | 'people' | 'chat'>('people')
   const [elapsed, setElapsed] = useState(0)
-  const [chat, setChat] = useState([...MOCK.live.chat] as Array<{
-    id: string | number; who: string; role: 'host' | 'student'; color: string; time: string; text: string
-  }>)
   const [draft, setDraft] = useState('')
+  const chatBodyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const intervalId = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(intervalId)
+    const id = setInterval(() => setElapsed(e => e + 1), 1000)
+    return () => clearInterval(id)
   }, [])
+
+  // Auto-scroll chat to bottom on new messages
+  useEffect(() => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight
+    }
+  }, [chatMessages])
 
   const fmt = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
-  // Sync mic/cam state with LiveKit
+  // Find the active remote screen share (or local one)
+  const activeScreenTrack = screenTracks.find(t => isTrackReference(t)) as TrackReference | undefined
+
   const toggleMic = useCallback(async () => {
     await localParticipant.setMicrophoneEnabled(!mic)
     setMic(v => !v)
@@ -125,13 +143,11 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
   const startShare = useCallback(async () => {
     await localParticipant.setScreenShareEnabled(true)
     setSharing(true)
-    setMode('screen')
   }, [localParticipant])
 
   const stopShare = useCallback(async () => {
     await localParticipant.setScreenShareEnabled(false)
     setSharing(false)
-    setMode('speaker')
   }, [localParticipant])
 
   const startRecording = useCallback(async () => {
@@ -145,47 +161,38 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
   }, [classId])
 
   const leaveRoom = useCallback(async () => {
-    if (role === 'teacher' && recording) {
-      await stopRecording()
-    }
-    // Navigate away — LiveKitRoom unmounts and disconnects automatically
+    if (role === 'teacher' && recording) await stopRecording()
     router.push(role === 'teacher' ? '/teacher/live' : '/live')
   }, [role, recording, stopRecording, router])
 
-  // Map LiveKit participants to our UI Participant type
-  const toUIParticipant = (p: typeof localParticipant | typeof remoteParticipants[0], isLocal = false): Participant => ({
-    id: p.identity,
-    name: p.name ?? p.identity,
-    role: role === 'teacher' && isLocal ? 'host' : 'student',
-    color: '#2747E0',
-    cam: p.isCameraEnabled,
-    mic: p.isMicrophoneEnabled,
-    hand: false,
-  })
+  const toUIParticipant = useCallback(
+    (p: typeof localParticipant | typeof remoteParticipants[0], isLocal = false): Participant => ({
+      id: p.identity,
+      name: p.name ?? p.identity,
+      role: role === 'teacher' && isLocal ? 'host' : 'student',
+      color: colorFor(p.identity),
+      cam: p.isCameraEnabled,
+      mic: p.isMicrophoneEnabled,
+      hand: false,
+    }),
+    [role],
+  )
 
   const me = toUIParticipant(localParticipant, true)
   const remotes = remoteParticipants.map(p => toUIParticipant(p))
   const everyone = [me, ...remotes]
   const host = role === 'teacher' ? me : (remotes.find(p => p.role === 'host') ?? everyone[0])
 
-  // Find video track ref for a participant identity (only return real tracks, not placeholders)
-  const trackRefFor = (identity: string): TrackReference | undefined => {
-    const t = tracks.find(t => t.participant.identity === identity)
+  const cameraTrackFor = (identity: string): TrackReference | undefined => {
+    const t = cameraTracks.find(t => t.participant.identity === identity)
     return t && isTrackReference(t) ? t : undefined
   }
 
-  const send = () => {
+  const sendMessage = useCallback(async () => {
     if (!draft.trim()) return
-    setChat(c => [...c, {
-      id: Date.now(),
-      who: me.name,
-      role: me.role,
-      color: me.color,
-      time: fmt(elapsed),
-      text: draft.trim(),
-    }])
+    await sendChat(draft.trim())
     setDraft('')
-  }
+  }, [draft, sendChat])
 
   if (connectionState === ConnectionState.Connecting) {
     return (
@@ -195,12 +202,17 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
     )
   }
 
+  const isScreenSharing = !!activeScreenTrack
+  const sharerName = activeScreenTrack
+    ? (everyone.find(p => p.id === activeScreenTrack.participant.identity)?.name ?? 'Someone')
+    : null
+
   return (
     <div className="lr">
       {/* Render remote audio tracks (invisible) */}
       {audioTracks
         .filter(t => t.participant.identity !== localParticipant.identity)
-        .map(t => <AudioTrack key={t.participant.identity} trackRef={t} />)
+        .map(t => isTrackReference(t) && <AudioTrack key={t.participant.identity} trackRef={t as TrackReference} />)
       }
 
       {/* Top bar */}
@@ -208,11 +220,9 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
         <div className="lr-live-pill">LIVE</div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {MOCK.live.liveNow.title}
+            {title}
           </div>
-          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.5)' }}>
-            {host.name}
-          </div>
+          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.5)' }}>{host.name}</div>
         </div>
         <div style={{ flex: 1 }} />
         {recording && (
@@ -229,44 +239,58 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
       <div className={`lr-body ${panel !== 'none' ? 'with-panel' : ''}`}>
         <div className="lr-stage">
           <div className="lr-main">
-            {mode === 'whiteboard' && <Whiteboard role={role} />}
-
-            {mode === 'screen' && (
-              <div style={{ position: 'absolute', inset: 0, background: '#0F1117', display: 'grid', placeItems: 'center' }}>
-                <div style={{ color: 'rgba(255,255,255,.5)', fontSize: 14 }}>
-                  {role === 'teacher' ? "You're sharing your screen" : `${host.name} is sharing`}
+            {/* Screen share takes priority over other modes */}
+            {isScreenSharing && (
+              <>
+                <VideoTrack
+                  trackRef={activeScreenTrack}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0F1117' }}
+                />
+                <div style={{
+                  position: 'absolute', top: 12, left: 12,
+                  background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(6px)',
+                  color: '#fff', fontSize: 12, padding: '4px 10px', borderRadius: 6,
+                }}>
+                  {activeScreenTrack.participant.identity === localParticipant.identity
+                    ? "You're sharing your screen"
+                    : `${sharerName} is sharing`}
                 </div>
-                <div style={{ position: 'absolute', right: 16, bottom: 16, width: 200, height: 124 }}>
-                  <VideoTile p={host} big trackRef={trackRefFor(host.id)} />
+                {/* PiP of host cam while someone shares */}
+                <div style={{ position: 'absolute', right: 16, bottom: 16, width: 200, height: 124, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,.5)' }}>
+                  <VideoTile p={host} big trackRef={cameraTrackFor(host.id)} />
                 </div>
-              </div>
+              </>
             )}
 
-            {mode === 'speaker' && (
+            {!isScreenSharing && mode === 'whiteboard' && <Whiteboard role={role} />}
+
+            {!isScreenSharing && mode === 'speaker' && (
               <div style={{ position: 'absolute', inset: 12 }}>
-                <VideoTile p={host} big trackRef={trackRefFor(host.id)} />
+                <VideoTile p={host} big trackRef={cameraTrackFor(host.id)} />
               </div>
             )}
 
-            {mode === 'grid' && (
+            {!isScreenSharing && mode === 'grid' && (
               <div className="lr-grid">
                 {everyone.slice(0, 9).map(p => (
-                  <VideoTile key={p.id} p={p} you={p.id === me.id} trackRef={trackRefFor(p.id)} />
+                  <VideoTile key={p.id} p={p} you={p.id === me.id} trackRef={cameraTrackFor(p.id)} />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Filmstrip */}
+          {/* Filmstrip (hidden when grid or screen share with single participant) */}
           {mode !== 'grid' && (
             <div className="lr-strip">
-              {(mode === 'speaker' ? remotes : everyone).slice(0, 7).map(p => (
-                <VideoTile key={p.id} p={p} you={p.id === me.id} trackRef={trackRefFor(p.id)} />
+              {(mode === 'speaker' || isScreenSharing ? remotes : everyone).slice(0, 7).map(p => (
+                <VideoTile key={p.id} p={p} you={p.id === me.id} trackRef={cameraTrackFor(p.id)} />
               ))}
-              <div className="lr-strip-more" onClick={() => setMode('grid')}>
-                <Grid size={18} />
-                <span>+{Math.max(0, everyone.length - 7)} more</span>
-              </div>
+              {everyone.length > 8 && (
+                <div className="lr-strip-more" onClick={() => setMode('grid')}>
+                  <Grid size={18} />
+                  <span>+{everyone.length - 7} more</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -279,17 +303,12 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
                 People · {everyone.length}
               </button>
               <button className={`lr-panel-tab ${panel === 'chat' ? 'active' : ''}`} onClick={() => setPanel('chat')}>
-                Chat
+                Chat {chatMessages.length > 0 && `· ${chatMessages.length}`}
               </button>
             </div>
 
             {panel === 'people' && (
               <div className="lr-panel-body">
-                {role === 'teacher' && (
-                  <button className="btn btn-secondary btn-sm btn-block" style={{ marginBottom: 12, background: '#26262E', color: '#fff', borderColor: 'rgba(255,255,255,.1)' }}>
-                    <MicOff size={13} /> Mute all students
-                  </button>
-                )}
                 {everyone.map(p => (
                   <div key={p.id} className="lr-people-row">
                     <div style={{ width: 34, height: 34, borderRadius: '50%', background: p.color, display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0, color: '#fff' }}>
@@ -299,7 +318,6 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
                       <div style={{ fontSize: 13, fontWeight: 500 }}>{p.id === me.id ? 'You' : p.name}</div>
                       {p.role === 'host' && <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)' }}>Host · Teacher</div>}
                     </div>
-                    {p.hand && <Hand size={15} color="#F5B301" />}
                     {p.mic ? <Mic size={15} color="#4ADE80" /> : <MicOff size={15} color="rgba(255,255,255,.35)" />}
                     {p.cam ? <Video size={15} color="rgba(255,255,255,.55)" /> : <VideoOff size={15} color="rgba(255,255,255,.35)" />}
                   </div>
@@ -309,20 +327,32 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
 
             {panel === 'chat' && (
               <>
-                <div className="lr-panel-body">
-                  {chat.map(m => (
+                <div className="lr-panel-body" ref={chatBodyRef}>
+                  {chatMessages.length === 0 && (
+                    <div style={{ textAlign: 'center', color: 'rgba(255,255,255,.3)', fontSize: 13, paddingTop: 40 }}>
+                      No messages yet
+                    </div>
+                  )}
+                  {chatMessages.map(m => (
                     <div key={m.id} className="lr-chat-msg">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
-                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: m.color, display: 'grid', placeItems: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0, color: '#fff' }}>
-                          {m.who.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                        <div style={{
+                          width: 22, height: 22, borderRadius: '50%',
+                          background: colorFor(m.from?.identity ?? ''),
+                          display: 'grid', placeItems: 'center',
+                          fontSize: 10, fontWeight: 700, flexShrink: 0, color: '#fff',
+                        }}>
+                          {(m.from?.name ?? m.from?.identity ?? '?').split(' ').map(n => n[0]).slice(0, 2).join('')}
                         </div>
-                        <b style={{ fontSize: 12.5 }}>{m.who}</b>
-                        {m.role === 'host' && (
-                          <span style={{ fontSize: 10, background: 'rgba(110,138,255,.25)', color: '#9DB2FF', padding: '1px 6px', borderRadius: 99, fontWeight: 600 }}>Host</span>
+                        <b style={{ fontSize: 12.5 }}>{m.from?.name ?? m.from?.identity ?? 'Unknown'}</b>
+                        {m.from?.identity === localParticipant.identity && (
+                          <span style={{ fontSize: 10, background: 'rgba(110,138,255,.25)', color: '#9DB2FF', padding: '1px 6px', borderRadius: 99, fontWeight: 600 }}>You</span>
                         )}
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', marginLeft: 'auto' }}>{m.time}</span>
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', marginLeft: 'auto' }}>
+                          {new Date(m.timestamp).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,.82)', lineHeight: 1.45, paddingLeft: 29 }}>{m.text}</div>
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,.82)', lineHeight: 1.45, paddingLeft: 29 }}>{m.message}</div>
                     </div>
                   ))}
                 </div>
@@ -331,9 +361,9 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
                     placeholder="Message the class…"
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && send()}
+                    onKeyDown={e => e.key === 'Enter' && sendMessage()}
                   />
-                  <button className="btn btn-brand btn-icon" onClick={send}>
+                  <button className="btn btn-brand btn-icon" onClick={sendMessage}>
                     <span style={{ fontSize: 14 }}>↑</span>
                   </button>
                 </div>
@@ -360,7 +390,8 @@ function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId
           <div className="ic"><ScreenShare size={20} /></div>
           <span>{sharing ? 'Stop share' : 'Share screen'}</span>
         </button>
-        <button className={`lr-ctrl ${mode === 'whiteboard' ? 'on' : ''}`} onClick={() => setMode(mode === 'whiteboard' ? 'speaker' : 'whiteboard')}>
+
+        <button className={`lr-ctrl ${!isScreenSharing && mode === 'whiteboard' ? 'on' : ''}`} onClick={() => setMode(mode === 'whiteboard' ? 'speaker' : 'whiteboard')}>
           <div className="ic"><PenTool size={20} /></div>
           <span>Whiteboard</span>
         </button>

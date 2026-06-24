@@ -73,6 +73,7 @@ class LiveClassController extends Controller
                 'token'      => $token,
                 'server_url' => config('services.livekit.url'),
                 'room_name'  => $class->room_name,
+                'title'      => $class->title,
             ],
         ]);
     }

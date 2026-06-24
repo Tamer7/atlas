@@ -1,6 +1,6 @@
 'use client'
-import { useRef, useState, useMemo, useEffect, useCallback } from 'react'
-import { PenTool, Highlighter, Eraser, Undo, Trash, Pointer } from '@/components/ui'
+import { useRef, useState, useEffect, useCallback } from 'react'
+import { PenTool, Highlighter, Eraser, Undo, Trash } from '@/components/ui'
 
 const WB_COLORS = ['#14130F', '#2747E0', '#C24A3A', '#1F7A47', '#B47A00', '#6B2E84']
 
@@ -8,11 +8,6 @@ type Point = { x: number; y: number }
 type TextStroke = { type: 'text'; x: number; y: number; text: string; size: number; color: string; weight: number }
 type PathStroke = { type: 'path'; tool: 'pen' | 'highlighter' | 'eraser'; color: string; size: number; pts: Point[] }
 type Stroke = TextStroke | PathStroke
-
-const lineSeg = (x1: number, y1: number, x2: number, y2: number): Point[] => [
-  { x: x1, y: y1 },
-  { x: x2, y: y2 },
-]
 
 interface WhiteboardProps {
   role?: string
@@ -26,23 +21,7 @@ export function Whiteboard({ role }: WhiteboardProps) {
   const [tool, setTool] = useState<'pen' | 'highlighter' | 'eraser'>('pen')
   const [color, setColor] = useState('#2747E0')
 
-  const seed = useMemo<Stroke[]>(() => ([
-    { type: 'text', x: 0.30, y: 0.16, text: 'Mixed Conditionals', size: 34, color: '#14130F', weight: 700 },
-    { type: 'path', tool: 'pen', color: '#C24A3A', size: 3, pts: lineSeg(0.30, 0.205, 0.70, 0.205) },
-    { type: 'text', x: 0.16, y: 0.40, text: 'PAST', size: 16, color: '#6E6A60', weight: 700 },
-    { type: 'text', x: 0.74, y: 0.40, text: 'NOW', size: 16, color: '#6E6A60', weight: 700 },
-    { type: 'path', tool: 'pen', color: '#14130F', size: 2.5, pts: lineSeg(0.16, 0.46, 0.84, 0.46) },
-    { type: 'path', tool: 'pen', color: '#14130F', size: 2.5, pts: [{ x: 0.20, y: 0.43 }, { x: 0.20, y: 0.49 }] },
-    { type: 'path', tool: 'pen', color: '#14130F', size: 2.5, pts: [{ x: 0.80, y: 0.43 }, { x: 0.80, y: 0.49 }] },
-    { type: 'text', x: 0.135, y: 0.585, text: 'if she had taken the job', size: 17, color: '#2747E0', weight: 500 },
-    { type: 'text', x: 0.56, y: 0.585, text: 'she would be in Lisbon', size: 17, color: '#1F7A47', weight: 500 },
-    { type: 'path', tool: 'pen', color: '#B47A00', size: 2.5, pts: [{ x: 0.40, y: 0.62 }, { x: 0.58, y: 0.62 }] },
-    { type: 'path', tool: 'pen', color: '#B47A00', size: 2.5, pts: [{ x: 0.58, y: 0.62 }, { x: 0.545, y: 0.60 }] },
-    { type: 'path', tool: 'pen', color: '#B47A00', size: 2.5, pts: [{ x: 0.58, y: 0.62 }, { x: 0.545, y: 0.64 }] },
-    { type: 'text', x: 0.30, y: 0.78, text: 'past cause  →  present result', size: 15, color: '#6E6A60', weight: 400 },
-  ]), [])
-
-  const strokes = useRef<Stroke[]>([...seed])
+  const strokes = useRef<Stroke[]>([])
 
   const redraw = useCallback(() => {
     const cv = canvasRef.current
@@ -160,16 +139,6 @@ export function Whiteboard({ role }: WhiteboardProps) {
       <div className="wb-banner">
         <PenTool size={13} color="var(--brand)" />
         {role === 'teacher' ? "You're presenting · everyone can draw" : 'Shared whiteboard · you can draw too'}
-      </div>
-
-      {/* Remote collaborator cursors */}
-      <div className="wb-cursor wb-cursor-a">
-        <Pointer size={16} color="#C24A3A" fill="#C24A3A" />
-        <span className="lbl" style={{ background: '#C24A3A' }}>Amir</span>
-      </div>
-      <div className="wb-cursor wb-cursor-b">
-        <Pointer size={16} color="#1F7A47" fill="#1F7A47" />
-        <span className="lbl" style={{ background: '#1F7A47' }}>Yuna</span>
       </div>
 
       <div className="wb-toolbar">
