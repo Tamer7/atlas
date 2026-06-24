@@ -7,6 +7,7 @@ use App\Modules\Course\CourseServiceProvider;
 use App\Modules\Curriculum\CurriculumServiceProvider;
 use App\Modules\Analytics\AnalyticsServiceProvider;
 use App\Modules\Enrollment\EnrollmentServiceProvider;
+use App\Modules\Live\LiveServiceProvider;
 
 return [
     AppServiceProvider::class,
@@ -16,4 +17,5 @@ return [
     CourseServiceProvider::class,
     CurriculumServiceProvider::class,
     EnrollmentServiceProvider::class,
+    LiveServiceProvider::class,
 ];

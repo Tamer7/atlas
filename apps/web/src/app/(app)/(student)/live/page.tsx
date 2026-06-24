@@ -51,7 +51,7 @@ export default function LiveClassesPage() {
                   {live.attending} classmates in the room · started {L.liveNow.startedAgo}
                 </span>
               </div>
-              <button className="btn btn-brand btn-lg" onClick={() => router.push('/live/room')}>
+              <button className="btn btn-brand btn-lg" onClick={() => router.push(`/live/room?classId=${live.id}&role=student`)}>
                 <Video size={16} /> Join live class
               </button>
             </div>

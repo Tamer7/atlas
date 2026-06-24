@@ -1,7 +1,17 @@
 'use client'
-// This page renders outside the (app) scrollable main by using position:fixed via CSS class .lr
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  LiveKitRoom,
+  useParticipants,
+  useLocalParticipant,
+  useTracks,
+  AudioTrack,
+  useConnectionState,
+  isTrackReference,
+} from '@livekit/components-react'
+import { Track, ConnectionState } from 'livekit-client'
+import type { TrackReference } from '@livekit/components-react'
 import {
   Mic, MicOff, Video, VideoOff, ScreenShare, Hand, Grid,
   PhoneOff, Square, Dot, PenTool, Users, ChatBubble,
@@ -9,47 +19,160 @@ import {
 import { MOCK } from '@/lib/mock-data'
 import { Whiteboard } from '@/components/live/Whiteboard'
 import { VideoTile, type Participant } from '@/components/live/VideoTile'
+import { apiClient } from '@/lib/api/client'
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface TokenData {
+  token: string
+  server_url: string
+  room_name: string
+}
+
+// ─── Outer shell: fetches token then mounts LiveKitRoom ───────────────────────
 
 export function LiveRoomClient() {
-  const router = useRouter()
   const searchParams = useSearchParams()
+  const classId = searchParams.get('classId')
   const role = (searchParams.get('role') ?? 'student') as 'teacher' | 'student'
 
-  const L = MOCK.live
-  const host = L.participants[0] as Participant
-  const others = L.participants.slice(1) as Participant[]
+  const [tokenData, setTokenData] = useState<TokenData | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const me: Participant = role === 'teacher'
-    ? (L.participants[0] as Participant)
-    : { id: 'me', name: 'Sofia Chen', role: 'student', color: '#2747E0', cam: true, mic: false, hand: false }
+  useEffect(() => {
+    if (!classId) {
+      setError('No class ID provided.')
+      return
+    }
 
-  const everyone: Participant[] = role === 'teacher'
-    ? (L.participants as unknown as Participant[])
-    : [{ ...me }, ...(L.participants as unknown as Participant[])]
+    apiClient.post(`/api/v1/live-classes/${classId}/token`)
+      .then(res => setTokenData(res.data.data))
+      .catch(err => setError(err.response?.data?.message ?? 'Failed to join class.'))
+  }, [classId])
 
-  const [mic, setMic] = useState(role === 'teacher')
+  if (error) {
+    return (
+      <div className="lr" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+        <div style={{ color: 'var(--danger)', fontSize: 16 }}>{error}</div>
+      </div>
+    )
+  }
+
+  if (!tokenData) {
+    return (
+      <div className="lr" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: 'rgba(255,255,255,.5)', fontSize: 14 }}>Connecting…</div>
+      </div>
+    )
+  }
+
+  return (
+    <LiveKitRoom
+      serverUrl={tokenData.server_url}
+      token={tokenData.token}
+      connect
+      audio
+      video
+      style={{ display: 'contents' }}
+    >
+      <LiveRoomInner role={role} classId={classId!} />
+    </LiveKitRoom>
+  )
+}
+
+// ─── Inner component: uses LiveKit hooks ─────────────────────────────────────
+
+function LiveRoomInner({ role, classId }: { role: 'teacher' | 'student'; classId: string }) {
+  const router = useRouter()
+  const connectionState = useConnectionState()
+  const { localParticipant } = useLocalParticipant()
+  const remoteParticipants = useParticipants()
+  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare])
+  const audioTracks = useTracks([Track.Source.Microphone])
+
+  const [mic, setMic] = useState(true)
   const [cam, setCam] = useState(true)
   const [mode, setMode] = useState<'speaker' | 'grid' | 'whiteboard' | 'screen'>('speaker')
   const [sharing, setSharing] = useState(false)
-  const [recording, setRecording] = useState(role === 'teacher')
+  const [recording, setRecording] = useState(false)
   const [hand, setHand] = useState(false)
   const [panel, setPanel] = useState<'none' | 'people' | 'chat'>('people')
-  const [elapsed, setElapsed] = useState(12 * 60 + 4)
-  const [chat, setChat] = useState([...L.chat] as Array<{
+  const [elapsed, setElapsed] = useState(0)
+  const [chat, setChat] = useState([...MOCK.live.chat] as Array<{
     id: string | number; who: string; role: 'host' | 'student'; color: string; time: string; text: string
   }>)
   const [draft, setDraft] = useState('')
 
   useEffect(() => {
-    const id = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(id)
+    const intervalId = setInterval(() => setElapsed(e => e + 1), 1000)
+    return () => clearInterval(intervalId)
   }, [])
 
   const fmt = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
-  const startShare = () => { setSharing(true); setMode('screen') }
-  const stopShare = () => { setSharing(false); setMode('speaker') }
+  // Sync mic/cam state with LiveKit
+  const toggleMic = useCallback(async () => {
+    await localParticipant.setMicrophoneEnabled(!mic)
+    setMic(v => !v)
+  }, [localParticipant, mic])
+
+  const toggleCam = useCallback(async () => {
+    await localParticipant.setCameraEnabled(!cam)
+    setCam(v => !v)
+  }, [localParticipant, cam])
+
+  const startShare = useCallback(async () => {
+    await localParticipant.setScreenShareEnabled(true)
+    setSharing(true)
+    setMode('screen')
+  }, [localParticipant])
+
+  const stopShare = useCallback(async () => {
+    await localParticipant.setScreenShareEnabled(false)
+    setSharing(false)
+    setMode('speaker')
+  }, [localParticipant])
+
+  const startRecording = useCallback(async () => {
+    await apiClient.post(`/api/v1/live-classes/${classId}/start`)
+    setRecording(true)
+  }, [classId])
+
+  const stopRecording = useCallback(async () => {
+    await apiClient.post(`/api/v1/live-classes/${classId}/end`)
+    setRecording(false)
+  }, [classId])
+
+  const leaveRoom = useCallback(async () => {
+    if (role === 'teacher' && recording) {
+      await stopRecording()
+    }
+    // Navigate away — LiveKitRoom unmounts and disconnects automatically
+    router.push(role === 'teacher' ? '/teacher/live' : '/live')
+  }, [role, recording, stopRecording, router])
+
+  // Map LiveKit participants to our UI Participant type
+  const toUIParticipant = (p: typeof localParticipant | typeof remoteParticipants[0], isLocal = false): Participant => ({
+    id: p.identity,
+    name: p.name ?? p.identity,
+    role: role === 'teacher' && isLocal ? 'host' : 'student',
+    color: '#2747E0',
+    cam: p.isCameraEnabled,
+    mic: p.isMicrophoneEnabled,
+    hand: false,
+  })
+
+  const me = toUIParticipant(localParticipant, true)
+  const remotes = remoteParticipants.map(p => toUIParticipant(p))
+  const everyone = [me, ...remotes]
+  const host = role === 'teacher' ? me : (remotes.find(p => p.role === 'host') ?? everyone[0])
+
+  // Find video track ref for a participant identity (only return real tracks, not placeholders)
+  const trackRefFor = (identity: string): TrackReference | undefined => {
+    const t = tracks.find(t => t.participant.identity === identity)
+    return t && isTrackReference(t) ? t : undefined
+  }
 
   const send = () => {
     if (!draft.trim()) return
@@ -64,17 +187,31 @@ export function LiveRoomClient() {
     setDraft('')
   }
 
+  if (connectionState === ConnectionState.Connecting) {
+    return (
+      <div className="lr" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: 'rgba(255,255,255,.5)', fontSize: 14 }}>Joining room…</div>
+      </div>
+    )
+  }
+
   return (
     <div className="lr">
+      {/* Render remote audio tracks (invisible) */}
+      {audioTracks
+        .filter(t => t.participant.identity !== localParticipant.identity)
+        .map(t => <AudioTrack key={t.participant.identity} trackRef={t} />)
+      }
+
       {/* Top bar */}
       <div className="lr-top">
         <div className="lr-live-pill">LIVE</div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {L.liveNow.title}
+            {MOCK.live.liveNow.title}
           </div>
           <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.5)' }}>
-            {L.liveNow.course} · {host.name}
+            {host.name}
           </div>
         </div>
         <div style={{ flex: 1 }} />
@@ -95,50 +232,36 @@ export function LiveRoomClient() {
             {mode === 'whiteboard' && <Whiteboard role={role} />}
 
             {mode === 'screen' && (
-              <div style={{ position: 'absolute', inset: 0, background: '#0F1117' }}>
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', padding: 48, background: 'linear-gradient(135deg, #1a1d29, #0F1117)' }}>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,.45)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 24 }}>
-                    {role === 'teacher' ? "You're sharing your screen" : `${host.name} is sharing`}
-                  </div>
-                  <div style={{ fontSize: 46, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 20, maxWidth: 720 }}>
-                    The two patterns of mixed conditionals
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 640 }}>
-                    {['Past condition → present result', 'Present condition → past result'].map((t, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'center', padding: 18, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12 }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 8, background: i === 0 ? '#2747E0' : '#1F7A47', display: 'grid', placeItems: 'center', fontWeight: 700, flexShrink: 0, color: '#fff' }}>{i + 1}</div>
-                        <div style={{ fontSize: 20, fontWeight: 500 }}>{t}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: 'auto', fontSize: 14, color: 'rgba(255,255,255,.4)' }}>Atlas · English B2 · Live Workshop</div>
+              <div style={{ position: 'absolute', inset: 0, background: '#0F1117', display: 'grid', placeItems: 'center' }}>
+                <div style={{ color: 'rgba(255,255,255,.5)', fontSize: 14 }}>
+                  {role === 'teacher' ? "You're sharing your screen" : `${host.name} is sharing`}
                 </div>
                 <div style={{ position: 'absolute', right: 16, bottom: 16, width: 200, height: 124 }}>
-                  <VideoTile p={host} big />
+                  <VideoTile p={host} big trackRef={trackRefFor(host.id)} />
                 </div>
               </div>
             )}
 
             {mode === 'speaker' && (
               <div style={{ position: 'absolute', inset: 12 }}>
-                <VideoTile p={host} big />
+                <VideoTile p={host} big trackRef={trackRefFor(host.id)} />
               </div>
             )}
 
             {mode === 'grid' && (
               <div className="lr-grid">
                 {everyone.slice(0, 9).map(p => (
-                  <VideoTile key={p.id} p={p} you={p.id === me.id} />
+                  <VideoTile key={p.id} p={p} you={p.id === me.id} trackRef={trackRefFor(p.id)} />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Filmstrip (hidden in grid mode) */}
+          {/* Filmstrip */}
           {mode !== 'grid' && (
             <div className="lr-strip">
-              {(mode === 'speaker' ? others : everyone).slice(0, 7).map(p => (
-                <VideoTile key={p.id} p={p} you={p.id === me.id} />
+              {(mode === 'speaker' ? remotes : everyone).slice(0, 7).map(p => (
+                <VideoTile key={p.id} p={p} you={p.id === me.id} trackRef={trackRefFor(p.id)} />
               ))}
               <div className="lr-strip-more" onClick={() => setMode('grid')}>
                 <Grid size={18} />
@@ -152,16 +275,10 @@ export function LiveRoomClient() {
         {panel !== 'none' && (
           <div className="lr-panel">
             <div className="lr-panel-tabs">
-              <button
-                className={`lr-panel-tab ${panel === 'people' ? 'active' : ''}`}
-                onClick={() => setPanel('people')}
-              >
+              <button className={`lr-panel-tab ${panel === 'people' ? 'active' : ''}`} onClick={() => setPanel('people')}>
                 People · {everyone.length}
               </button>
-              <button
-                className={`lr-panel-tab ${panel === 'chat' ? 'active' : ''}`}
-                onClick={() => setPanel('chat')}
-              >
+              <button className={`lr-panel-tab ${panel === 'chat' ? 'active' : ''}`} onClick={() => setPanel('chat')}>
                 Chat
               </button>
             </div>
@@ -169,10 +286,7 @@ export function LiveRoomClient() {
             {panel === 'people' && (
               <div className="lr-panel-body">
                 {role === 'teacher' && (
-                  <button
-                    className="btn btn-secondary btn-sm btn-block"
-                    style={{ marginBottom: 12, background: '#26262E', color: '#fff', borderColor: 'rgba(255,255,255,.1)' }}
-                  >
+                  <button className="btn btn-secondary btn-sm btn-block" style={{ marginBottom: 12, background: '#26262E', color: '#fff', borderColor: 'rgba(255,255,255,.1)' }}>
                     <MicOff size={13} /> Mute all students
                   </button>
                 )}
@@ -204,15 +318,11 @@ export function LiveRoomClient() {
                         </div>
                         <b style={{ fontSize: 12.5 }}>{m.who}</b>
                         {m.role === 'host' && (
-                          <span style={{ fontSize: 10, background: 'rgba(110,138,255,.25)', color: '#9DB2FF', padding: '1px 6px', borderRadius: 99, fontWeight: 600 }}>
-                            Host
-                          </span>
+                          <span style={{ fontSize: 10, background: 'rgba(110,138,255,.25)', color: '#9DB2FF', padding: '1px 6px', borderRadius: 99, fontWeight: 600 }}>Host</span>
                         )}
                         <span style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', marginLeft: 'auto' }}>{m.time}</span>
                       </div>
-                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,.82)', lineHeight: 1.45, paddingLeft: 29 }}>
-                        {m.text}
-                      </div>
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,.82)', lineHeight: 1.45, paddingLeft: 29 }}>{m.text}</div>
                     </div>
                   ))}
                 </div>
@@ -235,11 +345,11 @@ export function LiveRoomClient() {
 
       {/* Controls */}
       <div className="lr-controls">
-        <button className={`lr-ctrl ${mic ? '' : 'off'}`} onClick={() => setMic(!mic)}>
+        <button className={`lr-ctrl ${mic ? '' : 'off'}`} onClick={toggleMic}>
           <div className="ic">{mic ? <Mic size={20} /> : <MicOff size={20} />}</div>
           <span>{mic ? 'Mute' : 'Unmute'}</span>
         </button>
-        <button className={`lr-ctrl ${cam ? '' : 'off'}`} onClick={() => setCam(!cam)}>
+        <button className={`lr-ctrl ${cam ? '' : 'off'}`} onClick={toggleCam}>
           <div className="ic">{cam ? <Video size={20} /> : <VideoOff size={20} />}</div>
           <span>{cam ? 'Stop video' : 'Start video'}</span>
         </button>
@@ -250,10 +360,7 @@ export function LiveRoomClient() {
           <div className="ic"><ScreenShare size={20} /></div>
           <span>{sharing ? 'Stop share' : 'Share screen'}</span>
         </button>
-        <button
-          className={`lr-ctrl ${mode === 'whiteboard' ? 'on' : ''}`}
-          onClick={() => setMode(mode === 'whiteboard' ? 'speaker' : 'whiteboard')}
-        >
+        <button className={`lr-ctrl ${mode === 'whiteboard' ? 'on' : ''}`} onClick={() => setMode(mode === 'whiteboard' ? 'speaker' : 'whiteboard')}>
           <div className="ic"><PenTool size={20} /></div>
           <span>Whiteboard</span>
         </button>
@@ -266,7 +373,7 @@ export function LiveRoomClient() {
         )}
 
         {role === 'teacher' && (
-          <button className={`lr-ctrl ${recording ? 'live-rec' : ''}`} onClick={() => setRecording(!recording)}>
+          <button className={`lr-ctrl ${recording ? 'live-rec' : ''}`} onClick={() => recording ? stopRecording() : startRecording()}>
             <div className="ic">{recording ? <Square size={16} /> : <Dot size={20} />}</div>
             <span>{recording ? 'Stop rec' : 'Record'}</span>
           </button>
@@ -287,7 +394,7 @@ export function LiveRoomClient() {
           <span>{mode === 'grid' ? 'Speaker' : 'Grid'}</span>
         </button>
 
-        <button className="lr-leave" onClick={() => router.push('/live')}>
+        <button className="lr-leave" onClick={leaveRoom}>
           <PhoneOff size={16} /> {role === 'teacher' ? 'End class' : 'Leave'}
         </button>
       </div>
