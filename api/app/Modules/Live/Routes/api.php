@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('courses/{courseId}/live-classes', [LiveClassController::class, 'index']);
+    Route::get('student/live-classes', [LiveClassController::class, 'studentIndex']);
     Route::post('live-classes/{id}/token', [LiveClassController::class, 'token']);
 
     Route::middleware('role:teacher')->group(function () {

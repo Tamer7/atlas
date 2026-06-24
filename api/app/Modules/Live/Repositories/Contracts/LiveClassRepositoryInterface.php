@@ -16,5 +16,7 @@ interface LiveClassRepositoryInterface
 
     public function listForTeacher(User $teacher): Collection;
 
+    public function listForStudent(User $student): Collection;
+
     public function update(LiveClass $class, array $data): LiveClass;
 }

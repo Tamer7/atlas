@@ -35,6 +35,18 @@ class LiveClassRepository implements LiveClassRepositoryInterface
             ->get();
     }
 
+    public function listForStudent(User $student): Collection
+    {
+        $courseIds = \App\Models\Enrollment::where('user_id', $student->id)
+            ->pluck('course_id');
+
+        return LiveClass::with(['teacher', 'course'])
+            ->whereIn('course_id', $courseIds)
+            ->whereIn('status', ['scheduled', 'live'])
+            ->orderByDesc('scheduled_at')
+            ->get();
+    }
+
     public function update(LiveClass $class, array $data): LiveClass
     {
         $class->update($data);
