@@ -17,6 +17,9 @@ async function fetchUser(request: NextRequest): Promise<GuardUser | null> {
     const res = await fetch(`${API_URL}/api/v1/auth/me`, {
       headers: { cookie, accept: 'application/json' },
       cache: 'no-store',
+      // Fail closed: bounded timeout prevents hung backends from leaving requests
+      // pending indefinitely. AbortError is caught below, treated as unauthenticated.
+      signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return null;
 
@@ -24,7 +27,7 @@ async function fetchUser(request: NextRequest): Promise<GuardUser | null> {
     const user = body?.data?.user;
     return user && Array.isArray(user.roles) ? { roles: user.roles } : null;
   } catch {
-    // Fail closed. An API outage must never expose the app shell.
+    // Fail closed. An API outage, timeout, or any error must never expose the app shell.
     return null;
   }
 }

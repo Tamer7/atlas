@@ -41,6 +41,10 @@ services:
     image: atlas-web:prod
     container_name: atlas_web
     restart: unless-stopped
+    environment:
+      # Internal API URL for server-side requests. Overrides the build-time
+      # NEXT_PUBLIC_API_URL at runtime without requiring a rebuild.
+      INTERNAL_API_URL: http://api:8000
     depends_on:
       api:
         condition: service_healthy
