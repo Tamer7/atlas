@@ -28,6 +28,7 @@ export interface QuizListItem {
   quiz_type: QuizType;
   questions_count: number;
   published_at: string | null;
+  due_at: string | null;
   updated_at: string | null;
 }
 
@@ -45,6 +46,7 @@ export interface Quiz {
   show_correct: boolean;
   show_score: boolean;
   published_at: string | null;
+  due_at: string | null;
   created_by: string | null;
   questions_count?: number;
   questions?: QuizQuestion[];
@@ -110,6 +112,7 @@ export interface GradingQueueItem {
 }
 
 export interface CreateQuizQuestionPayload {
+  id?: string;
   type: QuestionType;
   prompt: string;
   points?: number;
@@ -128,6 +131,7 @@ export interface CreateQuizPayload {
   passing_score?: number;
   show_correct?: boolean;
   show_score?: boolean;
+  due_at?: string;
   publish?: boolean;
   questions: CreateQuizQuestionPayload[];
 }
@@ -143,6 +147,7 @@ export interface UpdateQuizPayload {
   passing_score?: number | null;
   show_correct?: boolean;
   show_score?: boolean;
+  due_at?: string | null;
   publish?: boolean;
   questions?: CreateQuizQuestionPayload[];
 }

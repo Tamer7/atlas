@@ -7,6 +7,7 @@ use App\Modules\Curriculum\Requests\CreateLessonRequest;
 use App\Modules\Curriculum\Requests\UpdateLessonNotesRequest;
 use App\Modules\Curriculum\Requests\UpdateLessonProgressRequest;
 use App\Modules\Curriculum\Requests\UpdateLessonRequest;
+use App\Modules\Curriculum\Requests\UploadLessonVideoRequest;
 use App\Modules\Curriculum\Resources\LessonDetailResource;
 use App\Modules\Curriculum\Services\LessonService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -70,6 +71,28 @@ class LessonController extends Controller
         return response()->json([
             'data'    => new LessonDetailResource($lesson),
             'message' => 'Lesson updated.',
+        ]);
+    }
+
+    public function uploadVideo(UploadLessonVideoRequest $request, string $id): JsonResponse
+    {
+        try {
+            $lesson = $this->lessonService->uploadVideo(
+                $request->user(),
+                $id,
+                $request->file('video'),
+            );
+        } catch (ModelNotFoundException) {
+            return response()->json(['message' => 'Lesson not found.', 'errors' => []], 404);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => $e->getMessage(), 'errors' => []], 403);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage(), 'errors' => []], 500);
+        }
+
+        return response()->json([
+            'data'    => new LessonDetailResource($lesson),
+            'message' => 'Video uploaded.',
         ]);
     }
 

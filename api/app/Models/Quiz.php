@@ -24,6 +24,7 @@ class Quiz extends Model
         'show_correct',
         'show_score',
         'published_at',
+        'due_at',
         'created_by',
     ];
 
@@ -34,6 +35,7 @@ class Quiz extends Model
             'show_correct'      => 'boolean',
             'show_score'        => 'boolean',
             'published_at'      => 'datetime',
+            'due_at'            => 'datetime',
         ];
     }
 

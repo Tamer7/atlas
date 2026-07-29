@@ -74,19 +74,35 @@ class QuizRepository implements QuizRepositoryInterface
         return $quiz->fresh(['questions', 'course']);
     }
 
+    /**
+     * Questions carrying the id of an existing question are updated in place so
+     * student answers referencing them survive; replacing everything would
+     * cascade-delete the answers of past attempts.
+     */
     private function syncQuestions(Quiz $quiz, array $questions): void
     {
-        $quiz->questions()->delete();
+        $existing = $quiz->questions()->get()->keyBy('id');
+        $keptIds = [];
 
         foreach ($questions as $index => $question) {
-            QuizQuestion::create([
-                'quiz_id'    => $quiz->id,
+            $attributes = [
                 'type'       => $question['type'],
                 'prompt'     => $question['prompt'],
                 'points'     => $question['points'] ?? 1,
                 'config'     => $question['config'] ?? [],
                 'sort_order' => $question['sort_order'] ?? $index,
-            ]);
+            ];
+
+            $current = isset($question['id']) ? $existing->get($question['id']) : null;
+
+            if ($current) {
+                $current->update($attributes);
+                $keptIds[] = $current->id;
+            } else {
+                $keptIds[] = QuizQuestion::create($attributes + ['quiz_id' => $quiz->id])->id;
+            }
         }
+
+        $quiz->questions()->whereNotIn('id', $keptIds)->delete();
     }
 }

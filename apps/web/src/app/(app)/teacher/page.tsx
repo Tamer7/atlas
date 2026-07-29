@@ -2,23 +2,57 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Avatar, Badge, ArrowRight, Calendar, Plus, Flag, Clock } from '@/components/ui'
+import { Pencil, Users, Video } from 'lucide-react'
 import { CreateCourseModal } from '@/components/teacher/CreateCourseModal'
+import { InviteStudentModal } from '@/components/teacher/InviteStudentModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDashboard } from '@/hooks/analytics/useDashboard'
+import { useTeacherLiveClasses } from '@/hooks/live/useLiveClasses'
+import { useMySchedule } from '@/hooks/schedule/useSchedule'
+import { useTeacherQuizzes } from '@/hooks/assessment/useQuizzes'
+import { useTeacherStudents } from '@/hooks/teacher/useStudents'
 import { avatarColor, formatRelativeTime } from '@/lib/quiz/helpers'
 import type { GradingQueueItem } from '@/types/assessment'
+import type { LiveClass } from '@/lib/api/live'
 
 function queueTypeLabel(item: GradingQueueItem): string {
   if (item.quiz_title.toLowerCase().includes('exam')) return 'Exam'
   return 'Quiz'
 }
 
+function isToday(iso: string | null): boolean {
+  if (!iso) return false
+  const d = new Date(iso)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate()
+}
+
 export default function TeacherDashboardPage() {
   const router = useRouter()
   const { user } = useAuth()
   const { data: dashboard, isLoading, isError } = useDashboard()
+  const { data: schedule = [] } = useMySchedule()
+  const { data: liveClasses = [] } = useTeacherLiveClasses()
+  const { data: quizzes = [] } = useTeacherQuizzes()
+  const { data: students = [] } = useTeacherStudents()
   const [showCreate, setShowCreate] = useState(false)
-  const firstName = user?.name?.split(' ')[0] ?? 'there'
+  const [showInvite, setShowInvite] = useState(false)
+  const firstName = (user?.name?.split(' ')[0] ?? 'there').replace(/\.+$/, '')
+
+  const today = new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })
+  const todayDow = ((new Date().getDay() + 6) % 7) + 1
+  const todaySlots = schedule.filter(s => s.day_of_week === todayDow)
+  const liveTodayOrNow = liveClasses.filter(
+    (lc: LiveClass) => lc.status === 'live' || (lc.status === 'scheduled' && isToday(lc.scheduled_at))
+  )
+
+  const atRisk = students.filter(s => s.status === 'at_risk').slice(0, 2)
+  const upcomingDue = quizzes
+    .filter(q => q.due_at && new Date(q.due_at).getTime() > Date.now())
+    .sort((a, b) => new Date(a.due_at!).getTime() - new Date(b.due_at!).getTime())
+    .slice(0, 2)
 
   const stats = dashboard?.stats
   const queue = dashboard?.grading_queue ?? []
@@ -58,12 +92,22 @@ export default function TeacherDashboardPage() {
     <div>
       <div className="page-head">
         <div>
-          <div className="crumbs">Tuesday, May 19</div>
-          <h1 className="h1">Good morning, <span className="serif-italic">{firstName}</span>.</h1>
+          <div className="crumbs">{today}</div>
+          <h1 className="h1">Welcome back, <span className="serif-italic">{firstName}</span>.</h1>
         </div>
         <div className="row" style={{ gap: 8 }}>
-          <button className="btn btn-secondary"><Calendar size={14} /> May 2026</button>
-          <button className="btn btn-brand" onClick={() => setShowCreate(true)}><Plus size={14} /> Create</button>
+          <button className="btn btn-secondary" onClick={() => router.push('/teacher/quizzes/new')}>
+            <Pencil size={13} /> New quiz
+          </button>
+          <button className="btn btn-secondary" onClick={() => setShowInvite(true)}>
+            <Users size={13} /> Invite student
+          </button>
+          <button className="btn btn-secondary" onClick={() => router.push('/schedule')}>
+            <Calendar size={14} /> Schedule
+          </button>
+          <button className="btn btn-brand" onClick={() => setShowCreate(true)}>
+            <Plus size={14} /> New course
+          </button>
         </div>
       </div>
 
@@ -141,71 +185,108 @@ export default function TeacherDashboardPage() {
           </div>
         </div>
 
-        {/* Today + alerts */}
+        {/* Today + attention */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
-            <h2 className="h2" style={{ marginBottom: 16 }}>Today&apos;s schedule</h2>
+            <div className="between" style={{ marginBottom: 16 }}>
+              <h2 className="h2">Today&apos;s schedule</h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => router.push('/schedule')}>
+                Full calendar <ArrowRight size={12} />
+              </button>
+            </div>
             <div className="card card-pad">
-              {[
-                { time: '10:00', title: 'Office hours · English B2', who: '8 students booked', color: 'var(--brand)' },
-                { time: '13:30', title: 'Live class · IELTS Writing', who: '12 attending', color: 'var(--accent)' },
-                { time: '16:00', title: '1-on-1 with Yuna Park', who: '30 min · Spanish A2', color: 'var(--success)' },
-              ].map((s, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    gap: 14,
-                    padding: '10px 0',
-                    borderBottom: i < 2 ? '1px solid var(--line)' : '0',
-                  }}
-                >
-                  <div style={{ width: 4, background: s.color, borderRadius: 4, alignSelf: 'stretch' }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{s.who}</div>
-                  </div>
-                  <div className="mono" style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>{s.time}</div>
+              {liveTodayOrNow.length === 0 && todaySlots.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--muted)', fontSize: 13 }}>
+                  No classes today.
                 </div>
-              ))}
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {liveTodayOrNow.map((lc: LiveClass) => (
+                    <div key={lc.id} style={{ display: 'flex', gap: 14 }}>
+                      <div style={{ width: 4, background: 'var(--danger)', borderRadius: 4, alignSelf: 'stretch' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>
+                          <Video size={11} style={{ verticalAlign: '-1px', marginRight: 4 }} />
+                          {lc.title}
+                          {lc.status === 'live' && <Badge tone="danger" style={{ marginLeft: 6 }}>Live</Badge>}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>{lc.course?.title} · live class</div>
+                      </div>
+                      <div className="mono" style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                        {lc.scheduled_at
+                          ? new Date(lc.scheduled_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: false })
+                          : 'now'}
+                      </div>
+                    </div>
+                  ))}
+                  {todaySlots.map(slot => (
+                    <div key={slot.id} style={{ display: 'flex', gap: 14 }}>
+                      <div style={{ width: 4, background: 'var(--brand)', borderRadius: 4, alignSelf: 'stretch' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{slot.course?.title}</div>
+                        {slot.label && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{slot.label}</div>}
+                      </div>
+                      <div className="mono" style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                        {slot.start_time}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div>
-            <h2 className="h2" style={{ marginBottom: 16 }}>Needs your attention</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div
-                className="card card-pad"
-                style={{ borderColor: 'var(--danger-tint)', background: 'var(--danger-tint)' }}
-              >
-                <div className="row" style={{ gap: 10 }}>
-                  <Flag size={16} color="var(--danger)" />
-                  <div style={{ flex: 1 }}>
-                    <b style={{ fontSize: 13 }}>Priya Raman</b> hasn&apos;t logged in for 7 days
-                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Avg score dropped 12 points</div>
+          {(atRisk.length > 0 || upcomingDue.length > 0) && (
+            <div>
+              <h2 className="h2" style={{ marginBottom: 16 }}>Needs your attention</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {atRisk.map(s => (
+                  <div
+                    key={s.id}
+                    className="card card-pad"
+                    style={{ borderColor: 'var(--danger-tint)', background: 'var(--danger-tint)' }}
+                  >
+                    <div className="row" style={{ gap: 10 }}>
+                      <Flag size={16} color="var(--danger)" />
+                      <div style={{ flex: 1 }}>
+                        <b style={{ fontSize: 13 }}>{s.name}</b> is at risk
+                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                          Avg score {s.avg_score}% · attendance {s.attendance_pct}%
+                        </div>
+                      </div>
+                      <button className="btn btn-secondary btn-sm" onClick={() => router.push('/teacher/students')}>
+                        View
+                      </button>
+                    </div>
                   </div>
-                  <button className="btn btn-secondary btn-sm">Reach out</button>
-                </div>
-              </div>
-              <div
-                className="card card-pad"
-                style={{ borderColor: 'var(--warning-tint)', background: 'var(--warning-tint)' }}
-              >
-                <div className="row" style={{ gap: 10 }}>
-                  <Clock size={16} color="var(--warning)" />
-                  <div style={{ flex: 1 }}>
-                    <b style={{ fontSize: 13 }}>Exam closes Fri</b> — End-of-term comprehensive
-                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>32 students have started · 18 not started</div>
+                ))}
+                {upcomingDue.map(q => (
+                  <div
+                    key={q.id}
+                    className="card card-pad"
+                    style={{ borderColor: 'var(--accent-tint)', background: 'var(--accent-tint)' }}
+                  >
+                    <div className="row" style={{ gap: 10 }}>
+                      <Clock size={16} color="var(--accent)" />
+                      <div style={{ flex: 1 }}>
+                        <b style={{ fontSize: 13 }}>{q.title}</b> closes{' '}
+                        {new Date(q.due_at!).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{q.course_title}</div>
+                      </div>
+                      <button className="btn btn-secondary btn-sm" onClick={() => router.push(`/teacher/quizzes/${q.id}/edit`)}>
+                        View
+                      </button>
+                    </div>
                   </div>
-                  <button className="btn btn-secondary btn-sm">View</button>
-                </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
       {showCreate && <CreateCourseModal onClose={() => setShowCreate(false)} />}
+      {showInvite && <InviteStudentModal onClose={() => setShowInvite(false)} />}
     </div>
   )
 }

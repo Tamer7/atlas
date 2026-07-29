@@ -31,6 +31,7 @@ export const API_ROUTES = {
     lesson: (id: string) => `/api/v1/lessons/${id}`,
     updateLesson: (id: string) => `/api/v1/lessons/${id}`,
     deleteLesson: (id: string) => `/api/v1/lessons/${id}`,
+    uploadLessonVideo: (id: string) => `/api/v1/lessons/${id}/video`,
     lessonProgress: (id: string) => `/api/v1/lessons/${id}/progress`,
     lessonNotes: (id: string) => `/api/v1/lessons/${id}/notes`,
     discussion: (id: string) => `/api/v1/lessons/${id}/discussion`,
@@ -55,5 +56,19 @@ export const API_ROUTES = {
   analytics: {
     dashboard: '/api/v1/teacher/dashboard',
     reports: '/api/v1/teacher/reports',
+  },
+  schedule: {
+    forCourse: (courseId: string) => `/api/v1/courses/${courseId}/schedule`,
+    createSlot: (courseId: string) => `/api/v1/courses/${courseId}/schedule`,
+    updateSlot: (id: string) => `/api/v1/schedule-slots/${id}`,
+    deleteSlot: (id: string) => `/api/v1/schedule-slots/${id}`,
+    mine: '/api/v1/my/schedule',
+  },
+  profile: {
+    grades: '/api/v1/student/grades',
+    dueAssignments: '/api/v1/student/due-assignments',
+    myComments: '/api/v1/student/comments',
+    studentComments: (studentId: string) => `/api/v1/teacher/students/${studentId}/comments`,
+    comment: (id: string) => `/api/v1/teacher/comments/${id}`,
   },
 } as const;

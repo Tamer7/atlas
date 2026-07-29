@@ -15,6 +15,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('modules/{id}', [ModuleController::class, 'destroy']);
         Route::post('modules/{moduleId}/lessons', [LessonController::class, 'store']);
         Route::patch('lessons/{id}', [LessonController::class, 'update']);
+        Route::post('lessons/{id}/video', [LessonController::class, 'uploadVideo']);
         Route::delete('lessons/{id}', [LessonController::class, 'destroy']);
     });
 

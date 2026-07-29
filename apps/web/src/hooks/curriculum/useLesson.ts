@@ -4,6 +4,7 @@ import {
   createLesson,
   updateLesson,
   deleteLesson,
+  uploadLessonVideo,
   fetchDiscussion,
   createDiscussionPost,
 } from '@/lib/api/curriculum';
@@ -47,6 +48,27 @@ export function useUpdateLesson(courseId: string) {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateLessonPayload }) =>
       updateLesson(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: lessonKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: curriculumKeys.modules(courseId) });
+      queryClient.invalidateQueries({ queryKey: courseKeys.detail(courseId) });
+    },
+  });
+}
+
+export function useUploadLessonVideo(courseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      file,
+      onProgress,
+    }: {
+      id: string;
+      file: File;
+      onProgress?: (pct: number) => void;
+    }) => uploadLessonVideo(id, file, onProgress),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: lessonKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: curriculumKeys.modules(courseId) });

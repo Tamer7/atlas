@@ -13,6 +13,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // The API is only reachable through our own reverse proxy on the
+        // internal Docker network, so every inbound request legitimately
+        // arrives from a proxy. Without this, Laravel sees the proxy's IP as
+        // the client IP and `throttle:10,1` on the auth routes becomes a
+        // global limit shared by all users instead of a per-client one.
+        // AWS_ELB is deliberately excluded — we are not behind an ELB.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->statefulApi();
 
         $middleware->alias([

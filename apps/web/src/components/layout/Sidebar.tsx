@@ -1,6 +1,6 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, BookOpen, Radio, Settings, Users, Pencil, LogOut, ClipboardCheck, TrendingUp } from 'lucide-react'
+import { Home, BookOpen, Radio, Settings, Users, Pencil, LogOut, ClipboardCheck, TrendingUp, CircleUser, CalendarDays } from 'lucide-react'
 import { Avatar, Badge } from '@/components/ui'
 import { useRole } from '@/contexts/RoleContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,9 +10,11 @@ const studentNav = [
   { group: 'Learn', items: [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
     { id: 'courses', label: 'My Courses', icon: BookOpen, href: '/courses' },
+    { id: 'schedule', label: 'Schedule', icon: CalendarDays, href: '/schedule' },
     { id: 'live', label: 'Live Classes', icon: Radio, href: '/live', soon: true },
   ]},
   { group: 'Account', items: [
+    { id: 'profile', label: 'My Profile', icon: CircleUser, href: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ]},
 ]
@@ -22,6 +24,7 @@ const teacherNav = [
     { id: 't-dashboard', label: 'Dashboard', icon: Home, href: '/teacher' },
     { id: 'roster', label: 'Students', icon: Users, href: '/teacher/students' },
     { id: 'courses', label: 'My Courses', icon: BookOpen, href: '/courses' },
+    { id: 'schedule', label: 'Schedule', icon: CalendarDays, href: '/schedule' },
     { id: 'live', label: 'Live Classes', icon: Radio, href: '/teacher/live', soon: true },
   ]},
   { group: 'Assess', items: [

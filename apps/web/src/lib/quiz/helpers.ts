@@ -76,6 +76,7 @@ export function answerToPayload(
 }
 
 interface BuilderQuestion {
+  id?: string;
   type: QuestionType;
   prompt: string;
   points: number;
@@ -141,6 +142,9 @@ export function builderQuestionToPayload(
   }
 
   return {
+    // Existing question ids let the API update in place (preserving student
+    // answers); locally generated ids are simply treated as new questions.
+    id: q.id,
     type: q.type,
     prompt: q.prompt,
     points: q.points,

@@ -1,0 +1,27 @@
+# Secrets — must never be baked into an image layer.
+.env
+.env.*
+!.env.example
+
+# Rebuilt inside the image; copying the host copy shadows the --no-dev install
+# and breaks package:discover.
+vendor/
+node_modules/
+
+# Runtime state, recreated by the Dockerfile.
+bootstrap/cache/
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/app/public/
+
+# Not needed at runtime.
+tests/
+.phpunit.cache/
+.phpunit.result.cache
+.git/
+.gitignore
+.github/
+*.md
+docker-compose*.yml

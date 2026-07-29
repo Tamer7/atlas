@@ -1,0 +1,37 @@
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Laravel is served on the same origin as the frontend so the Sanctum
+	# session cookie stays first-party. Routing these at Caddy rather than
+	# through Next's rewrite saves a Node hop; the rewrite in next.config.ts
+	# stays as the local-dev path.
+	@api path /api/* /sanctum/* /up
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# Lesson video uploads — keep in step with upload_max_filesize in
+	# api/docker/Dockerfile.prod (64M).
+	request_body {
+		max_size 64MB
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 10MB
+			roll_keep 5
+		}
+	}
+}

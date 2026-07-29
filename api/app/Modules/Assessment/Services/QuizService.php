@@ -81,6 +81,7 @@ class QuizService
             'show_correct'        => $data['show_correct'] ?? true,
             'show_score'          => $data['show_score'] ?? true,
             'published_at'        => ! empty($data['publish']) ? now() : null,
+            'due_at'              => $data['due_at'] ?? null,
             'created_by'          => $teacher->id,
         ], $questions);
 

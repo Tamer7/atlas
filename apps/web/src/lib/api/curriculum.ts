@@ -82,6 +82,29 @@ export const deleteLesson = async (id: string): Promise<void> => {
   await apiClient.delete(API_ROUTES.curriculum.deleteLesson(id));
 };
 
+export const uploadLessonVideo = async (
+  id: string,
+  file: File,
+  onProgress?: (pct: number) => void
+): Promise<LessonDetail> => {
+  const form = new FormData();
+  form.append('video', file);
+
+  const { data } = await apiClient.post<ApiResponse<LessonDetail>>(
+    API_ROUTES.curriculum.uploadLessonVideo(id),
+    form,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: e => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      },
+    }
+  );
+  return data.data;
+};
+
 export const updateLessonProgress = async (
   id: string,
   payload: UpdateLessonProgressPayload

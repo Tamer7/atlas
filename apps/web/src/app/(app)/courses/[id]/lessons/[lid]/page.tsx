@@ -10,6 +10,7 @@ import {
 import { useCourse } from '@/hooks/courses/useCourses'
 import { useLesson, useDiscussion, useCreateDiscussionPost } from '@/hooks/curriculum/useLesson'
 import { useUpdateLessonProgress, useUpdateLessonNotes } from '@/hooks/curriculum/useLessonProgress'
+import { getYouTubeId, youTubeEmbedUrl } from '@/lib/video'
 import type { LessonChapter, Module } from '@/types/curriculum'
 
 function fmt(seconds: number) {
@@ -73,6 +74,7 @@ export default function LessonPage({
 
   const duration = lesson?.duration_seconds ?? 0
   const isVideo = lesson?.content_type === 'video' && !!lesson.video_url
+  const youTubeId = isVideo ? getYouTubeId(lesson.video_url) : null
   const chapters: LessonChapter[] = lesson?.chapters ?? []
   const transcript = lesson?.transcript ?? []
   const attachments = lesson?.attachments ?? []
@@ -198,7 +200,17 @@ export default function LessonPage({
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
         <div>
-          {isVideo ? (
+          {youTubeId ? (
+            <div className="video-stage">
+              <iframe
+                src={youTubeEmbedUrl(youTubeId)}
+                title={lesson.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+              />
+            </div>
+          ) : isVideo ? (
             <div className="video-stage">
               <video
                 ref={videoRef}

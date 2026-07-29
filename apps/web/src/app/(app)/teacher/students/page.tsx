@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { MessageSquareText } from 'lucide-react'
 import { Avatar, Badge, Progress, SegControl } from '@/components/ui'
 import { useTeacherStudents } from '@/hooks/teacher/useStudents'
 import { InviteStudentModal } from '@/components/teacher/InviteStudentModal'
+import { StudentCommentsModal } from '@/components/teacher/StudentCommentsModal'
 import type { TeacherStudent } from '@/types/course'
 
 const FILTERS = [
@@ -28,6 +29,7 @@ export default function TeacherRosterPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [showInvite, setShowInvite] = useState(false)
+  const [commentsFor, setCommentsFor] = useState<TeacherStudent | null>(null)
   const { data: students = [], isLoading, isError } = useTeacherStudents()
 
   const items = students
@@ -86,12 +88,13 @@ export default function TeacherRosterPage() {
                 <th>Courses</th>
                 <th>Attendance</th>
                 <th>Avg score</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 32 }}>
+                  <td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 32 }}>
                     No students enrolled yet. Invite your first student.
                   </td>
                 </tr>
@@ -120,6 +123,15 @@ export default function TeacherRosterPage() {
                       </div>
                     </td>
                     <td className="num"><b>{s.avg_score}%</b></td>
+                    <td>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        title="Comments about this student"
+                        onClick={() => setCommentsFor(s)}
+                      >
+                        <MessageSquareText size={12} /> Comments
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -129,6 +141,13 @@ export default function TeacherRosterPage() {
       )}
 
       {showInvite && <InviteStudentModal onClose={() => setShowInvite(false)} />}
+      {commentsFor && (
+        <StudentCommentsModal
+          studentId={commentsFor.id}
+          studentName={commentsFor.name}
+          onClose={() => setCommentsFor(null)}
+        />
+      )}
     </div>
   )
 }

@@ -1,0 +1,163 @@
+# Production stack. Only Caddy binds host ports; everything else is reachable
+# solely on the internal Docker network.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: atlas_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    depends_on:
+      - api
+      - web
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        # Server-side only: the browser calls same-origin /api/*, which Caddy
+        # routes straight to Laravel. This value is used by SSR and by the
+        # next.config.ts rewrite, both of which run inside the network.
+        NEXT_PUBLIC_API_URL: http://api:8000
+        NEXT_PUBLIC_LIVEKIT_URL: ${LIVEKIT_URL}
+    image: atlas-web:prod
+    container_name: atlas_web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./api
+      dockerfile: docker/Dockerfile.prod
+    image: atlas-api:prod
+    container_name: atlas_api
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      APP_URL: https://${APP_DOMAIN}
+      FRONTEND_URL: https://${APP_DOMAIN}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: warning
+
+      # Single-origin deployment: the SPA and API share ${APP_DOMAIN}, so the
+      # Sanctum session cookie is first-party and needs no cross-site relaxing.
+      SANCTUM_STATEFUL_DOMAINS: ${APP_DOMAIN}
+      SESSION_DOMAIN: ${APP_DOMAIN}
+      SESSION_COOKIE: atlas_session
+      SESSION_DRIVER: redis
+      SESSION_SECURE_COOKIE: "true"
+      SESSION_SAME_SITE: lax
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      CACHE_STORE: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # No queued jobs exist yet, so `sync` runs them inline. Switch to `redis`
+      # and enable the worker service below at the same time — setting redis
+      # without a worker makes jobs vanish silently.
+      QUEUE_CONNECTION: sync
+
+      MAIL_MAILER: smtp
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Atlas}
+
+      LIVEKIT_URL: ${LIVEKIT_URL}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+
+      # Hetzner Object Storage (S3-compatible) for lesson videos and recordings.
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      AWS_DEFAULT_REGION: ${S3_REGION}
+      AWS_BUCKET: ${S3_BUCKET}
+      AWS_ENDPOINT: ${S3_ENDPOINT}
+      AWS_URL: ${S3_PUBLIC_URL}
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+
+      LIVEKIT_EGRESS_BUCKET: ${S3_RECORDINGS_BUCKET}
+      LIVEKIT_EGRESS_S3_KEY: ${S3_ACCESS_KEY}
+      LIVEKIT_EGRESS_S3_SECRET: ${S3_SECRET_KEY}
+      LIVEKIT_EGRESS_S3_REGION: ${S3_REGION}
+      LIVEKIT_EGRESS_S3_ENDPOINT: ${S3_ENDPOINT}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: atlas_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: atlas_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Enable together with QUEUE_CONNECTION=redis above. The worker needs the same
+  # environment as `api`; extract that block into a YAML anchor (`x-api-env: &api-env`)
+  # and reference it from both services rather than duplicating it.
+  # worker:
+  #   image: atlas-api:prod
+  #   container_name: atlas_worker
+  #   restart: unless-stopped
+  #   entrypoint: ["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"]
+  #   depends_on:
+  #     - redis
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+  caddy_logs:

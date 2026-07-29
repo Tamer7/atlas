@@ -569,3 +569,42 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: inher
 .live-card-thumb { aspect-ratio: 16/9; position: relative; display: flex; align-items: flex-end; padding: 14px; }
 .live-pill-sm { display: inline-flex; align-items: center; gap: 6px; background: #FF3B3B; color: #fff; font-weight: 700; font-size: 10px; letter-spacing: 0.06em; padding: 4px 8px; border-radius: var(--r-pill); }
 .live-pill-sm::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: lr-blink 1.4s infinite; }
+
+/* Weekly schedule calendar (FullCalendar, Atlas theme) */
+.atlas-calendar {
+  --fc-border-color: var(--line);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--paper-2);
+  --fc-today-bg-color: transparent;
+  --fc-highlight-color: var(--brand-tint);
+  --fc-event-border-color: transparent;
+  font-size: 13px;
+}
+.atlas-calendar .fc-scrollgrid { border-radius: var(--r-md); overflow: hidden; background: var(--card); }
+.atlas-calendar .fc-col-header-cell { background: var(--paper-2); }
+.atlas-calendar .fc-col-header-cell-cushion {
+  padding: 10px 4px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  text-decoration: none; cursor: default;
+}
+.atlas-calendar .fc-timegrid-slot { height: 2.6em; }
+.atlas-calendar .fc-timegrid-slot-label-cushion {
+  font-family: var(--font-mono); font-size: 11px; color: var(--faint);
+}
+.atlas-calendar .fc-timegrid-axis-cushion { font-size: 11px; color: var(--faint); }
+.atlas-calendar .fc-event { border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(20, 19, 15, 0.08); }
+.atlas-calendar .fc-event:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.atlas-calendar .fc-event.fc-event-draggable { cursor: grab; }
+.atlas-calendar .fc-event.fc-event-dragging { cursor: grabbing; }
+.atlas-calendar .fc-timegrid-event .fc-event-main { padding: 0; }
+.atlas-cal-event { height: 100%; padding: 5px 8px 5px 9px; border-radius: 8px; overflow: hidden; }
+.atlas-cal-event-time { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-bottom: 1px; }
+.atlas-cal-event-title { font-weight: 600; font-size: 12px; line-height: 1.25; color: var(--ink); }
+.atlas-cal-event-label {
+  font-size: 11px; color: var(--muted); margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.atlas-cal-event-title {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}

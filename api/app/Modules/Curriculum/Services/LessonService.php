@@ -13,6 +13,10 @@ use App\Modules\Curriculum\Repositories\Contracts\ModuleRepositoryInterface;
 use App\Modules\Enrollment\Repositories\Contracts\EnrollmentRepositoryInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use RuntimeException;
 
 class LessonService
 {
@@ -58,6 +62,37 @@ class LessonService
         $this->assertIsInstructor($teacher, $lesson->module->course);
 
         return $this->lessonRepository->update($lesson, $data);
+    }
+
+    public function uploadVideo(User $teacher, string $lessonId, UploadedFile $file): Lesson
+    {
+        $lesson = $this->findLessonOrFail($lessonId);
+        $this->assertIsInstructor($teacher, $lesson->module->course);
+
+        $disk = Storage::disk('s3');
+        $path = "lesson-videos/{$lesson->id}/".Str::uuid().'.'.$file->getClientOriginalExtension();
+
+        if ($disk->putFileAs(dirname($path), $file, basename($path)) === false) {
+            throw new RuntimeException('Failed to store the video file.');
+        }
+
+        $this->deleteStoredVideo($lesson->video_url);
+
+        return $this->lessonRepository->update($lesson, [
+            'content_type' => 'video',
+            'video_url'    => $disk->url($path),
+        ]);
+    }
+
+    private function deleteStoredVideo(?string $videoUrl): void
+    {
+        $baseUrl = config('filesystems.disks.s3.url');
+
+        if (! $videoUrl || ! $baseUrl || ! str_starts_with($videoUrl, $baseUrl)) {
+            return;
+        }
+
+        Storage::disk('s3')->delete(ltrim(substr($videoUrl, strlen($baseUrl)), '/'));
     }
 
     public function deleteLesson(User $teacher, string $lessonId): void

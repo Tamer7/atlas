@@ -15,17 +15,19 @@ export const liveKeys = {
   forCourse: (courseId: string) => ['live-classes', 'course', courseId] as const,
 }
 
-export function useTeacherLiveClasses() {
+export function useTeacherLiveClasses(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: liveKeys.teacher,
     queryFn: fetchTeacherLiveClasses,
+    enabled: options?.enabled ?? true,
   })
 }
 
-export function useStudentLiveClasses() {
+export function useStudentLiveClasses(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: liveKeys.student,
     queryFn: fetchStudentLiveClasses,
+    enabled: options?.enabled ?? true,
   })
 }
 

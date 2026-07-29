@@ -28,6 +28,7 @@ class QuizResource extends JsonResource
             'show_correct'       => $this->show_correct,
             'show_score'         => $this->show_score,
             'published_at'       => $this->published_at?->toJSON(),
+            'due_at'             => $this->due_at?->toJSON(),
             'created_by'         => $this->created_by,
             'questions_count'    => $this->when(isset($this->questions_count), $this->questions_count),
             'questions'          => $this->whenLoaded(

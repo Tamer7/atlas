@@ -17,6 +17,7 @@ class QuizListResource extends JsonResource
             'quiz_type'       => $this->quiz_type,
             'questions_count' => $this->questions_count ?? $this->questions?->count() ?? 0,
             'published_at'    => $this->published_at?->toJSON(),
+            'due_at'          => $this->due_at?->toJSON(),
             'updated_at'      => $this->updated_at?->toJSON(),
         ];
     }
