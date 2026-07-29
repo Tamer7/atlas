@@ -25,6 +25,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
+            'deactivated_at'    => 'datetime',
         ];
     }
 
@@ -37,6 +38,11 @@ class User extends Authenticatable
     {
         $roles = is_array($roles) ? $roles : [$roles];
         return $this->roles()->whereIn('name', $roles)->exists();
+    }
+
+    public function isActive(): bool
+    {
+        return $this->deactivated_at === null;
     }
 
     public function enrollments(): HasMany
