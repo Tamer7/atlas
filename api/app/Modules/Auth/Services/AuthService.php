@@ -26,9 +26,17 @@ class AuthService
             throw new AuthenticationException('Invalid credentials.');
         }
 
+        $user = Auth::user();
+
+        if (! $user->isActive()) {
+            Auth::guard('web')->logout();
+
+            throw new AuthenticationException('Invalid credentials.');
+        }
+
         $this->regenerateSessionIfAvailable(request());
 
-        return Auth::user();
+        return $user;
     }
 
     public function register(array $data): User

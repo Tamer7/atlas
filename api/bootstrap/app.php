@@ -29,6 +29,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->statefulApi();
 
+        // Applied to every API route in one place rather than per route file.
+        // Guests pass straight through: $request->user() is null.
+        $middleware->api(append: [
+            \App\Http\Middleware\EnsureUserActive::class,
+        ]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
