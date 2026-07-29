@@ -600,7 +600,7 @@ git commit -m "feat(api): block deactivated users at login and mid-session"
 **Interfaces:**
 - Produces:
   - `AdminUserRepositoryInterface::paginate(array $filters, int $perPage): LengthAwarePaginator`
-  - `AdminUserRepositoryInterface::find(string $id): ?User`
+  - `AdminUserRepositoryInterface::findOrFail(string $id): User`
   - `AdminUserRepositoryInterface::countActiveAdmins(): int`
   - `AdminUserService::list(array $filters, int $perPage): LengthAwarePaginator`
   - Route names under `/api/v1/admin/users`.
