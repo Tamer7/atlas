@@ -25,6 +25,19 @@ A     atlas.example.com    -> <server-ipv4>
 AAAA  atlas.example.com    -> <server-ipv6>
 ```
 
+The app is single-origin by design: Caddy serves Next at `/` and routes `/api/*`
+and `/sanctum/*` to Laravel on the same hostname, which is what keeps the
+Sanctum session cookie first-party. One hostname is all this needs. Splitting
+the API onto its own subdomain requires CORS config, a wildcard `SESSION_DOMAIN`,
+and dropping the same-origin `baseURL` in `apps/web/src/lib/api/client.ts`.
+
+**Behind Cloudflare:** set the record to **DNS only** (grey cloud) before the
+first `up`. With the proxy enabled, the ACME challenge terminates at Cloudflare
+rather than this server and issuance fails — and repeated failures burn the
+Let's Encrypt per-hostname rate limit. The proxy can be switched on after the
+certificate exists, but only with SSL mode **Full (Strict)**; anything weaker
+produces a redirect loop.
+
 ## 2. Server setup
 
 ```bash
@@ -49,9 +62,15 @@ git clone <your-repo-url> /opt/atlas
 cd /opt/atlas
 
 cp .env.prod.example .env.prod
-docker compose -f docker-compose.prod.yml run --rm --no-deps api \
-    php artisan key:generate --show      # paste into APP_KEY
-nano .env.prod                            # fill every blank
+
+# APP_KEY is 32 random bytes, base64-encoded. Generate it directly — do NOT use
+# `docker compose run ... artisan key:generate`: every run of the api service
+# goes through the entrypoint, which blocks waiting for Postgres and never
+# reaches the command.
+echo "base64:$(openssl rand -base64 32)"   # paste into APP_KEY
+openssl rand -base64 32                    # paste into DB_PASSWORD
+
+nano .env.prod                             # fill every blank
 chmod 600 .env.prod
 ```
 
