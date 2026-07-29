@@ -2,6 +2,12 @@
 .env
 .env.local
 .env.*.local
+# .env.prod holds live secrets and is created inside the repo clone on the
+# server (see docs/DEPLOY.md), where a stray `git add -A` would otherwise
+# stage it. The .env.*.local pattern above does not cover it.
+.env.prod
+.env.prod.*
+!.env.prod.example
 
 # Node modules
 node_modules/

@@ -2,6 +2,11 @@
 # solely on the internal Docker network.
 #
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# The project name is pinned so this stack never shares volumes with the dev
+# docker-compose.yml, which otherwise derives the same name from the directory
+# and would hand prod an already-initialised Postgres data directory.
+name: atlas-prod
 
 services:
   caddy:
