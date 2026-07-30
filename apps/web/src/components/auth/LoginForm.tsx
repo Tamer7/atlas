@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useLogin } from '@/hooks/auth/useLogin';
 import { useSendMagicLink } from '@/hooks/auth/useMagicLink';
 import { Spinner } from '@/components/ui/Spinner';
@@ -227,12 +226,6 @@ export function LoginForm() {
           Continue with Google
         </button>
 
-        <p className="mt-7 text-center text-xs" style={{ color: 'var(--muted)' }}>
-          New here?{' '}
-          <Link href="/register" className="font-semibold text-ink">
-            Create an account
-          </Link>
-        </p>
       </div>
     </div>
   );

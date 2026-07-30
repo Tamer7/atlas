@@ -21,19 +21,6 @@ export const loginWithPassword = async (
   return data.data.user;
 };
 
-export const registerUser = async (payload: {
-  name: string;
-  email: string;
-  password: string;
-  password_confirmation: string;
-}): Promise<User> => {
-  const { data } = await apiClient.post<ApiResponse<{ user: User }>>(
-    API_ROUTES.auth.register,
-    payload
-  );
-  return data.data.user;
-};
-
 export const logoutUser = async (): Promise<void> => {
   await apiClient.post(API_ROUTES.auth.logout);
 };

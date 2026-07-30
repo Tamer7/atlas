@@ -19,6 +19,8 @@ class LiveClassController extends Controller
 
     public function index(string $courseId): JsonResponse
     {
+        $this->liveService->materialiseUpcomingForCourse($courseId);
+
         $classes = $this->repo->listForCourse($courseId);
 
         return response()->json([
@@ -28,7 +30,10 @@ class LiveClassController extends Controller
 
     public function teacherIndex(): JsonResponse
     {
-        $classes = $this->repo->listForTeacher(request()->user());
+        $user = request()->user();
+        $this->liveService->materialiseUpcomingForUser($user);
+
+        $classes = $this->repo->listForTeacher($user);
 
         return response()->json([
             'data' => LiveClassResource::collection($classes),
@@ -37,7 +42,10 @@ class LiveClassController extends Controller
 
     public function studentIndex(): JsonResponse
     {
-        $classes = $this->repo->listForStudent(request()->user());
+        $user = request()->user();
+        $this->liveService->materialiseUpcomingForUser($user);
+
+        $classes = $this->repo->listForStudent($user);
 
         return response()->json([
             'data' => LiveClassResource::collection($classes),

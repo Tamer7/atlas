@@ -9,9 +9,14 @@ use Agence104\LiveKit\EncodedOutputs;
 use Agence104\LiveKit\VideoGrant;
 use App\Models\LiveClass;
 use App\Models\User;
+use App\Modules\Course\Models\CourseScheduleSlot;
+use App\Modules\Course\Repositories\Contracts\ScheduleRepositoryInterface;
 use App\Modules\Enrollment\Repositories\Contracts\EnrollmentRepositoryInterface;
 use App\Modules\Live\Repositories\Contracts\LiveClassRepositoryInterface;
+use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livekit\EncodedFileOutput;
 use Livekit\S3Upload;
@@ -21,7 +26,86 @@ class LiveService
     public function __construct(
         private readonly LiveClassRepositoryInterface $repo,
         private readonly EnrollmentRepositoryInterface $enrollmentRepo,
+        private readonly ScheduleRepositoryInterface $scheduleRepo,
     ) {}
+
+    /**
+     * Lazy materialisation entry points: there is no cron or queue worker in
+     * this app (QUEUE_CONNECTION=sync), so upcoming schedule-slot occurrences
+     * are turned into joinable LiveClass rows on demand, right before we list
+     * them. firstOrCreateForSlot() makes repeated calls idempotent.
+     */
+    public function materialiseUpcomingForUser(User $user): void
+    {
+        $this->materialiseFromSlots($this->scheduleRepo->listForUser($user));
+    }
+
+    public function materialiseUpcomingForCourse(string $courseId): void
+    {
+        $this->materialiseFromSlots($this->scheduleRepo->listForCourse($courseId));
+    }
+
+    /**
+     * @param Collection<int, CourseScheduleSlot> $slots each expected to have `course` eager-loaded
+     */
+    public function materialiseFromSlots(Collection $slots): void
+    {
+        // Schedule slots carry no timezone of their own, and config('app.timezone')
+        // is UTC, so occurrences are computed in the app timezone. Known
+        // limitation: this will be wrong once courses/teachers span timezones —
+        // a proper fix needs a per-course (or per-user) timezone to convert from.
+        $now     = Carbon::now(config('app.timezone'));
+        $horizon = $now->copy()->addWeeks(2);
+
+        foreach ($slots as $slot) {
+            $course = $slot->course;
+
+            if (! $course) {
+                continue;
+            }
+
+            foreach ($this->occurrencesFor($slot, $now, $horizon) as $occurrence) {
+                $this->repo->firstOrCreateForSlot($slot->id, $occurrence, [
+                    'course_id'  => $course->id,
+                    'teacher_id' => $course->instructor_id,
+                    'title'      => $slot->label ?: $course->title,
+                    'room_name'  => 'atlas-' . Str::uuid(),
+                    'status'     => 'scheduled',
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @return list<CarbonInterface>
+     */
+    private function occurrencesFor(CourseScheduleSlot $slot, CarbonInterface $now, CarbonInterface $horizon): array
+    {
+        $occurrences  = [];
+        $startOfToday = $now->copy()->startOfDay();
+
+        // Scan every day from today through the 2-week horizon (inclusive)
+        // and keep the ones matching this slot's weekday.
+        for ($i = 0; $i <= 14; $i++) {
+            $day = $startOfToday->copy()->addDays($i);
+
+            if ($day->isoWeekday() !== (int) $slot->day_of_week) {
+                continue;
+            }
+
+            $occurrence = $day->setTimeFromTimeString((string) $slot->start_time);
+
+            // Never backfill an occurrence that has already happened, and
+            // never materialise past the 2-week horizon.
+            if ($occurrence->lessThanOrEqualTo($now) || $occurrence->greaterThan($horizon)) {
+                continue;
+            }
+
+            $occurrences[] = $occurrence;
+        }
+
+        return $occurrences;
+    }
 
     public function create(array $data, User $teacher): LiveClass
     {

@@ -5,7 +5,6 @@ namespace App\Modules\Auth\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Auth\Requests\LoginRequest;
 use App\Modules\Auth\Requests\MagicLinkRequest;
-use App\Modules\Auth\Requests\RegisterRequest;
 use App\Modules\Auth\Resources\UserResource;
 use App\Modules\Auth\Services\AuthService;
 use Illuminate\Auth\AuthenticationException;
@@ -28,16 +27,6 @@ class AuthController extends Controller
             'data'    => ['user' => new UserResource($user)],
             'message' => 'Logged in successfully.',
         ]);
-    }
-
-    public function register(RegisterRequest $request): JsonResponse
-    {
-        $user = $this->authService->register($request->validated());
-
-        return response()->json([
-            'data'    => ['user' => new UserResource($user)],
-            'message' => 'Account created successfully.',
-        ], 201);
     }
 
     public function logout(Request $request): JsonResponse

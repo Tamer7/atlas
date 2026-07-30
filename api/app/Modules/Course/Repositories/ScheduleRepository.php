@@ -11,7 +11,8 @@ class ScheduleRepository implements ScheduleRepositoryInterface
 {
     public function listForCourse(string $courseId): Collection
     {
-        return CourseScheduleSlot::where('course_id', $courseId)
+        return CourseScheduleSlot::with('course:id,title,instructor_id')
+            ->where('course_id', $courseId)
             ->orderBy('day_of_week')
             ->orderBy('start_time')
             ->get();
@@ -19,7 +20,9 @@ class ScheduleRepository implements ScheduleRepositoryInterface
 
     public function listForUser(User $user): Collection
     {
-        $query = CourseScheduleSlot::with('course:id,title,tag,thumb_gradient,glyph');
+        // instructor_id is not rendered by ScheduleSlotResource but is needed
+        // by LiveService's materialisation (teacher_id for the created class).
+        $query = CourseScheduleSlot::with('course:id,title,tag,thumb_gradient,glyph,instructor_id');
 
         if ($user->hasRole('teacher')) {
             $query->whereHas('course', fn ($q) => $q->where('instructor_id', $user->id));

@@ -12,6 +12,7 @@ class LiveClass extends Model
 
     protected $fillable = [
         'course_id',
+        'schedule_slot_id',
         'teacher_id',
         'title',
         'description',

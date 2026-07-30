@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { use, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Pencil, Trash2 } from 'lucide-react'
 import { Field } from '@/components/ui'
+import { useCourse } from '@/hooks/courses/useCourses'
 import {
   useCourseSchedule,
   useCreateScheduleSlot,
@@ -12,15 +14,13 @@ import {
 import { DAY_NAMES, dayName } from '@/types/schedule'
 import type { ScheduleSlot } from '@/types/schedule'
 
-interface ScheduleManagerModalProps {
-  courseId: string
-  onClose: () => void
-}
-
 const EMPTY_FORM = { day_of_week: 1, start_time: '09:00', end_time: '10:00', label: '' }
 
-export function ScheduleManagerModal({ courseId, onClose }: ScheduleManagerModalProps) {
-  const { data: slots = [] } = useCourseSchedule(courseId)
+export default function ScheduleManagerPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const router = useRouter()
+  const { data: course } = useCourse(id)
+  const { data: slots = [] } = useCourseSchedule(id)
   const createSlot = useCreateScheduleSlot()
   const updateSlot = useUpdateScheduleSlot()
   const deleteSlot = useDeleteScheduleSlot()
@@ -30,6 +30,8 @@ export function ScheduleManagerModal({ courseId, onClose }: ScheduleManagerModal
   const [error, setError] = useState('')
 
   const busy = createSlot.isPending || updateSlot.isPending || deleteSlot.isPending
+
+  const goToCourse = () => router.push(`/courses/${id}`)
 
   const startEdit = (slot: ScheduleSlot) => {
     setEditingId(slot.id)
@@ -67,7 +69,7 @@ export function ScheduleManagerModal({ courseId, onClose }: ScheduleManagerModal
       if (editingId) {
         await updateSlot.mutateAsync({ id: editingId, payload })
       } else {
-        await createSlot.mutateAsync({ courseId, payload })
+        await createSlot.mutateAsync({ courseId: id, payload })
       }
       resetForm()
     } catch {
@@ -75,36 +77,32 @@ export function ScheduleManagerModal({ courseId, onClose }: ScheduleManagerModal
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (editingId === id) resetForm()
-    await deleteSlot.mutateAsync(id)
+  const handleDelete = async (slotId: string) => {
+    if (editingId === slotId) resetForm()
+    await deleteSlot.mutateAsync(slotId)
   }
 
   return (
-    <dialog
-      open
-      aria-modal="true"
-      aria-label="Course schedule"
-      style={{
-        position: 'fixed', inset: 0, width: '100%', height: '100%',
-        background: 'transparent', display: 'grid', placeItems: 'center',
-        zIndex: 50, padding: 0, border: 0, maxWidth: 'none', maxHeight: 'none',
-      }}
-    >
-      <button
-        aria-label="Close"
-        style={{
-          position: 'absolute', inset: 0, width: '100%', height: '100%',
-          background: 'var(--overlay)', border: 0, cursor: 'default', padding: 0,
-        }}
-        onClick={onClose}
-        disabled={busy}
-      />
-      <div
-        className="card card-pad-lg"
-        style={{ position: 'relative', width: 560, zIndex: 1, maxHeight: '90vh', overflowY: 'auto' }}
-      >
-        <h2 className="h2" style={{ marginBottom: 6 }}>Weekly schedule</h2>
+    <div>
+      <div className="page-head">
+        <div>
+          <div className="crumbs">
+            <a
+              href="#"
+              onClick={e => {
+                e.preventDefault()
+                goToCourse()
+              }}
+            >
+              {course?.title ?? 'Course'}
+            </a>
+            {' / Schedule'}
+          </div>
+          <h1 className="h1">Weekly schedule</h1>
+        </div>
+      </div>
+
+      <div className="card card-pad-lg" style={{ maxWidth: 760 }}>
         <p className="muted" style={{ fontSize: 13, marginBottom: 20 }}>
           Students enrolled in this course see these times. Edit or remove slots any time —
           changes are visible to students immediately.
@@ -201,7 +199,7 @@ export function ScheduleManagerModal({ courseId, onClose }: ScheduleManagerModal
           </Field>
 
           {error && (
-            <div className="help" style={{ color: 'var(--danger)', marginTop: 8 }}>{error}</div>
+            <div className="help" style={{ color: 'var(--danger)', marginTop: 8 }} role="alert">{error}</div>
           )}
 
           <div className="row" style={{ marginTop: 16, gap: 10, justifyContent: 'flex-end' }}>
@@ -210,7 +208,7 @@ export function ScheduleManagerModal({ courseId, onClose }: ScheduleManagerModal
                 Cancel edit
               </button>
             )}
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>
+            <button type="button" className="btn btn-secondary" onClick={goToCourse} disabled={busy}>
               Done
             </button>
             <button type="submit" className="btn btn-brand" disabled={busy}>
@@ -219,6 +217,6 @@ export function ScheduleManagerModal({ courseId, onClose }: ScheduleManagerModal
           </div>
         </form>
       </div>
-    </dialog>
+    </div>
   )
 }

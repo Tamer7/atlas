@@ -7,7 +7,6 @@ import {
   useDeactivateUser,
   useReactivateUser,
 } from '@/hooks/admin/useAdminUsers'
-import { CreateUserModal } from '@/components/admin/CreateUserModal'
 import type { AdminRole } from '@/types/admin'
 
 const ROLE_FILTERS: { value: AdminRole | ''; label: string }[] = [
@@ -26,7 +25,6 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<AdminRole | ''>('')
   const [status, setStatus] = useState<'active' | 'inactive' | ''>('')
-  const [showCreate, setShowCreate] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const { data, isLoading, isError } = useAdminUsers({ search, role, status })
@@ -42,9 +40,9 @@ export default function AdminUsersPage() {
           <div className="crumbs">Administration</div>
           <h1 className="h1">Users</h1>
         </div>
-        <button className="btn btn-brand" onClick={() => setShowCreate(true)}>
+        <Link href="/admin/users/new" className="btn btn-brand">
           Add user
-        </button>
+        </Link>
       </div>
 
       <div className="row" style={{ gap: 10, marginBottom: 16 }}>
@@ -145,8 +143,6 @@ export default function AdminUsersPage() {
           </div>
         ))}
       </div>
-
-      {showCreate && <CreateUserModal onClose={() => setShowCreate(false)} />}
     </div>
   )
 }

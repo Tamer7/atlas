@@ -8,7 +8,6 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use App\Modules\Auth\Mail\MagicLinkMail;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 class AuthService
@@ -34,23 +33,6 @@ class AuthService
             throw new AuthenticationException('Invalid credentials.');
         }
 
-        $this->regenerateSessionIfAvailable(request());
-
-        return $user;
-    }
-
-    public function register(array $data): User
-    {
-        $user = $this->userRepository->create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'color'    => $this->randomColor(),
-        ]);
-
-        $this->userRepository->assignRole($user, 'student');
-
-        Auth::login($user);
         $this->regenerateSessionIfAvailable(request());
 
         return $user;
@@ -99,9 +81,4 @@ class AuthService
         }
     }
 
-    private function randomColor(): string
-    {
-        $colors = ['#2747E0', '#1F7A47', '#D97757', '#B47A00', '#5C3A1E'];
-        return $colors[array_rand($colors)];
-    }
 }

@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Badge, Progress, SegControl, CourseThumb } from '@/components/ui'
 import { useCourses } from '@/hooks/courses/useCourses'
 import { useAuth } from '@/contexts/AuthContext'
-import { CreateCourseModal } from '@/components/teacher/CreateCourseModal'
 
 const FILTERS = [
   { value: 'all', label: 'All' },
@@ -19,7 +19,6 @@ export default function CoursesPage() {
   const { user } = useAuth()
   const isTeacher = user?.roles.includes('teacher')
   const [filter, setFilter] = useState('all')
-  const [showCreate, setShowCreate] = useState(false)
   const { data: courses = [], isLoading, isError } = useCourses()
 
   const items = filter === 'all'
@@ -36,9 +35,9 @@ export default function CoursesPage() {
         <div className="row" style={{ gap: 8 }}>
           <SegControl options={FILTERS} value={filter} onChange={setFilter} />
           {isTeacher && (
-            <button className="btn btn-brand" onClick={() => setShowCreate(true)}>
+            <Link href="/teacher/courses/new" className="btn btn-brand">
               <Plus size={14} /> New course
-            </button>
+            </Link>
           )}
         </div>
       </div>
@@ -83,8 +82,6 @@ export default function CoursesPage() {
           </button>
         ))}
       </div>
-
-      {showCreate && <CreateCourseModal onClose={() => setShowCreate(false)} />}
     </div>
   )
 }

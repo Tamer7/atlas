@@ -4,7 +4,6 @@ import { decide, isPublicPath, landingPathFor } from '@/lib/auth/guard';
 describe('isPublicPath', () => {
   it('allows auth pages', () => {
     expect(isPublicPath('/login')).toBe(true);
-    expect(isPublicPath('/register')).toBe(true);
     expect(isPublicPath('/magic')).toBe(true);
     expect(isPublicPath('/invitation/accept')).toBe(true);
   });
@@ -12,6 +11,8 @@ describe('isPublicPath', () => {
   it('does not treat app pages as public', () => {
     expect(isPublicPath('/courses')).toBe(false);
     expect(isPublicPath('/dashboard')).toBe(false);
+    // Self-registration is disabled; /register must never be publicly reachable.
+    expect(isPublicPath('/register')).toBe(false);
   });
 });
 

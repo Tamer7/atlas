@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Avatar, Badge, ArrowRight, Calendar, Plus, Flag, Clock } from '@/components/ui'
 import { Pencil, Users, Video } from 'lucide-react'
-import { CreateCourseModal } from '@/components/teacher/CreateCourseModal'
 import { InviteStudentModal } from '@/components/teacher/InviteStudentModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDashboard } from '@/hooks/analytics/useDashboard'
@@ -37,7 +36,6 @@ export default function TeacherDashboardPage() {
   const { data: liveClasses = [] } = useTeacherLiveClasses()
   const { data: quizzes = [] } = useTeacherQuizzes()
   const { data: students = [] } = useTeacherStudents()
-  const [showCreate, setShowCreate] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const firstName = (user?.name?.split(' ')[0] ?? 'there').replace(/\.+$/, '')
 
@@ -105,7 +103,7 @@ export default function TeacherDashboardPage() {
           <button className="btn btn-secondary" onClick={() => router.push('/schedule')}>
             <Calendar size={14} /> Schedule
           </button>
-          <button className="btn btn-brand" onClick={() => setShowCreate(true)}>
+          <button className="btn btn-brand" onClick={() => router.push('/teacher/courses/new')}>
             <Plus size={14} /> New course
           </button>
         </div>
@@ -285,7 +283,6 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
-      {showCreate && <CreateCourseModal onClose={() => setShowCreate(false)} />}
       {showInvite && <InviteStudentModal onClose={() => setShowInvite(false)} />}
     </div>
   )

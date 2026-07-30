@@ -13,32 +13,17 @@ beforeEach(function () {
 });
 
 
-test('user can register', function () {
-    $response = $this->postJson('/api/v1/auth/register', [
-        'name' => 'Sofia Chen',
-        'email' => 'sofia@example.com',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
-    ]);
-
-    $response->assertCreated()
-        ->assertJsonStructure([
-            'data' => ['user' => ['id', 'name', 'email', 'roles', 'color']],
-            'message',
-        ]);
-
-    $this->assertDatabaseHas('users', ['email' => 'sofia@example.com']);
-});
-
-test('register fails with duplicate email', function () {
-    User::factory()->create(['email' => 'taken@example.com']);
-
+test('self-registration is disabled', function () {
+    // Accounts are created only by an administrator or via an invitation.
+    // If this ever returns anything but 404 the public signup route is back.
     $this->postJson('/api/v1/auth/register', [
-        'name' => 'Test',
-        'email' => 'taken@example.com',
-        'password' => 'password123',
+        'name'                  => 'Sofia Chen',
+        'email'                 => 'sofia@example.com',
+        'password'              => 'password123',
         'password_confirmation' => 'password123',
-    ])->assertUnprocessable();
+    ])->assertNotFound();
+
+    $this->assertDatabaseMissing('users', ['email' => 'sofia@example.com']);
 });
 
 test('user can login with valid credentials', function () {
@@ -142,21 +127,6 @@ test('a deactivated user cannot log in via magic link', function () {
         ->assertStatus(422);
 
     $this->assertGuest();
-});
-
-test('registered user gets student role', function () {
-    $response = $this->postJson('/api/v1/auth/register', [
-        'name'                  => 'New Student',
-        'email'                 => 'newstudent@example.com',
-        'password'              => 'password123',
-        'password_confirmation' => 'password123',
-    ]);
-
-    $response->assertCreated();
-    $this->assertDatabaseHas('user_roles', [
-        'user_id' => \App\Models\User::where('email', 'newstudent@example.com')->value('id'),
-        'role_id' => \App\Models\Role::where('name', 'student')->value('id'),
-    ]);
 });
 
 test('user roles are returned as string array in api response', function () {

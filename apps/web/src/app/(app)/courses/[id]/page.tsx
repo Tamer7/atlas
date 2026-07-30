@@ -8,8 +8,6 @@ import { useQuizzes } from '@/hooks/assessment/useQuizzes'
 import { useCourseSchedule } from '@/hooks/schedule/useSchedule'
 import { useRole } from '@/contexts/RoleContext'
 import { AddModuleModal } from '@/components/teacher/AddModuleModal'
-import { LessonEditorModal } from '@/components/teacher/LessonEditorModal'
-import { ScheduleManagerModal } from '@/components/teacher/ScheduleManagerModal'
 import { dayName } from '@/types/schedule'
 import type { Lesson, LessonStatus } from '@/types/curriculum'
 
@@ -41,9 +39,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const { data: schedule = [] } = useCourseSchedule(id)
   const [tab, setTab] = useState('curriculum')
   const [showAddModule, setShowAddModule] = useState(false)
-  const [showAddLesson, setShowAddLesson] = useState(false)
-  const [editLesson, setEditLesson] = useState<Lesson | null>(null)
-  const [showSchedule, setShowSchedule] = useState(false)
 
   if (isLoading) {
     return <div className="muted" style={{ padding: 32 }}>Loading course…</div>
@@ -123,7 +118,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                 </button>
                 <button
                   className="btn btn-brand btn-sm"
-                  onClick={() => setShowAddLesson(true)}
+                  onClick={() => router.push(`/courses/${id}/lessons/new`)}
                   disabled={course.modules.length === 0}
                 >
                   <Plus size={12} /> Add lesson
@@ -187,12 +182,12 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                               title="Edit lesson"
                               onClick={e => {
                                 e.stopPropagation()
-                                setEditLesson(lesson)
+                                router.push(`/courses/${id}/lessons/${lesson.id}/edit`)
                               }}
                               onKeyDown={e => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.stopPropagation()
-                                  setEditLesson(lesson)
+                                  router.push(`/courses/${id}/lessons/${lesson.id}/edit`)
                                 }
                               }}
                             >
@@ -281,7 +276,10 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                 <CalendarDays size={12} /> Open calendar <ArrowRight size={12} />
               </button>
               {isTeacher && (
-                <button className="btn btn-brand btn-sm" onClick={() => setShowSchedule(true)}>
+                <button
+                  className="btn btn-brand btn-sm"
+                  onClick={() => router.push(`/teacher/courses/${id}/schedule`)}
+                >
                   Manage
                 </button>
               )}
@@ -328,24 +326,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
 
       {showAddModule && (
         <AddModuleModal courseId={id} onClose={() => setShowAddModule(false)} />
-      )}
-      {showAddLesson && (
-        <LessonEditorModal
-          courseId={id}
-          modules={course.modules}
-          onClose={() => setShowAddLesson(false)}
-        />
-      )}
-      {editLesson && (
-        <LessonEditorModal
-          courseId={id}
-          modules={course.modules}
-          lesson={editLesson}
-          onClose={() => setEditLesson(null)}
-        />
-      )}
-      {showSchedule && (
-        <ScheduleManagerModal courseId={id} onClose={() => setShowSchedule(false)} />
       )}
     </div>
   )

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   LiveKitRoom,
-  useParticipants,
+  useRemoteParticipants,
   useLocalParticipant,
   useTracks,
   AudioTrack,
@@ -16,9 +16,8 @@ import { Track, ConnectionState } from 'livekit-client'
 import type { TrackReference } from '@livekit/components-react'
 import {
   Mic, MicOff, Video, VideoOff, ScreenShare, Hand, Grid,
-  PhoneOff, Square, Dot, PenTool, Users, ChatBubble,
+  PhoneOff, Square, Dot, Users, ChatBubble,
 } from '@/components/ui'
-import { Whiteboard } from '@/components/live/Whiteboard'
 import { VideoTile, type Participant } from '@/components/live/VideoTile'
 import { apiClient } from '@/lib/api/client'
 
@@ -95,7 +94,9 @@ function LiveRoomInner({
   const router = useRouter()
   const connectionState = useConnectionState()
   const { localParticipant } = useLocalParticipant()
-  const remoteParticipants = useParticipants()
+  // useRemoteParticipants, NOT useParticipants: the latter includes the local
+  // participant, so `everyone = [me, ...remotes]` listed you twice.
+  const remoteParticipants = useRemoteParticipants()
   const cameraTracks = useTracks([Track.Source.Camera])
   const screenTracks = useTracks([Track.Source.ScreenShare])
   const audioTracks = useTracks([Track.Source.Microphone])
@@ -103,7 +104,7 @@ function LiveRoomInner({
 
   const [mic, setMic] = useState(true)
   const [cam, setCam] = useState(true)
-  const [mode, setMode] = useState<'speaker' | 'grid' | 'whiteboard'>('speaker')
+  const [mode, setMode] = useState<'speaker' | 'grid'>('speaker')
   const [sharing, setSharing] = useState(false)
   const [recording, setRecording] = useState(false)
   const [hand, setHand] = useState(false)
@@ -262,8 +263,6 @@ function LiveRoomInner({
               </>
             )}
 
-            {!isScreenSharing && mode === 'whiteboard' && <Whiteboard role={role} />}
-
             {!isScreenSharing && mode === 'speaker' && (
               <div style={{ position: 'absolute', inset: 12 }}>
                 <VideoTile p={host} big trackRef={cameraTrackFor(host.id)} />
@@ -389,11 +388,6 @@ function LiveRoomInner({
         <button className={`lr-ctrl ${sharing ? 'on' : ''}`} onClick={() => sharing ? stopShare() : startShare()}>
           <div className="ic"><ScreenShare size={20} /></div>
           <span>{sharing ? 'Stop share' : 'Share screen'}</span>
-        </button>
-
-        <button className={`lr-ctrl ${!isScreenSharing && mode === 'whiteboard' ? 'on' : ''}`} onClick={() => setMode(mode === 'whiteboard' ? 'speaker' : 'whiteboard')}>
-          <div className="ic"><PenTool size={20} /></div>
-          <span>Whiteboard</span>
         </button>
 
         {role === 'student' && (
