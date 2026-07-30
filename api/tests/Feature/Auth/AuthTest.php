@@ -137,3 +137,47 @@ test('user roles are returned as string array in api response', function () {
         ->assertOk()
         ->assertJsonPath('data.user.roles', ['student']);
 });
+
+test('auth/me is not capped by the credential-guessing throttle', function () {
+    // Regression guard. /auth/me used to sit inside the same throttle:10,1
+    // group as login, but the frontend route guard calls it on EVERY page
+    // navigation and every RSC prefetch. A 10/min cap logged real users out
+    // after roughly ten clicks: the guard got a 429, failed closed, and
+    // bounced them to /login.
+    //
+    // The beforeEach above disables ThrottleRequests for this whole file --
+    // which is exactly why that bug went unnoticed. Re-enable it here or this
+    // test proves nothing.
+    $this->withMiddleware(ThrottleRequests::class);
+
+    $user = User::factory()->create();
+
+    foreach (range(1, 30) as $i) {
+        $response = $this->actingAs($user)->getJson('/api/v1/auth/me');
+
+        $this->assertSame(
+            200,
+            $response->status(),
+            "request {$i} was rejected — /auth/me is throttled too tightly again",
+        );
+    }
+});
+
+test('login is still throttled against credential guessing', function () {
+    // The counterpart: loosening /auth/me must not have loosened login.
+    $this->withMiddleware(ThrottleRequests::class);
+
+    User::factory()->create(['email' => 'target@example.com', 'password' => bcrypt('secret123')]);
+
+    foreach (range(1, 10) as $ignored) {
+        $this->postJson('/api/v1/auth/login', [
+            'email'    => 'target@example.com',
+            'password' => 'wrong-password',
+        ]);
+    }
+
+    $this->postJson('/api/v1/auth/login', [
+        'email'    => 'target@example.com',
+        'password' => 'wrong-password',
+    ])->assertStatus(429);
+});
