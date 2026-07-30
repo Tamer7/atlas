@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { loginWithPassword } from '@/lib/api/auth';
+import { landingPathFor } from '@/lib/auth/guard';
 
 export function useLogin() {
   const queryClient = useQueryClient();
@@ -11,8 +12,7 @@ export function useLogin() {
       loginWithPassword(email, password),
     onSuccess: (user) => {
       queryClient.setQueryData(['auth', 'me'], user);
-      const isTeacher = user.roles?.includes('teacher') ?? false;
-      router.replace(isTeacher ? '/teacher' : '/dashboard');
+      router.replace(landingPathFor(user));
     },
   });
 }
