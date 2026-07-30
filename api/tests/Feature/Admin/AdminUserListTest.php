@@ -38,10 +38,10 @@ test('teachers cannot list users', function () {
 
 test('an admin sees every user with role and status', function () {
     $admin = admin();
-    User::factory()->teacher()->create(['name' => 'Tina Teacher']);
-    User::factory()->create(['name' => 'Sam Student']);
+    User::factory()->teacher()->create(['name' => 'Tina Teacher', 'email' => 'tina@example.com']);
+    User::factory()->create(['name' => 'Sam Student', 'email' => 'sam@example.com']);
 
-    $this->actingAs($admin)
+    $response = $this->actingAs($admin)
         ->getJson('/api/v1/admin/users')
         ->assertOk()
         ->assertJsonCount(3, 'data')
@@ -49,6 +49,22 @@ test('an admin sees every user with role and status', function () {
             'data'  => [['id', 'name', 'email', 'role', 'is_active', 'created_at']],
             'meta'  => ['current_page', 'last_page', 'total'],
         ]);
+
+    // Locate rows by email rather than index — the list is ordered by name,
+    // and index position would be an accident of alphabetical ordering.
+    $users = collect($response->json('data'));
+
+    $adminRow = $users->firstWhere('email', $admin->email);
+    expect($adminRow['role'])->toBe('admin');
+    expect($adminRow['is_active'])->toBeTrue();
+
+    $teacherRow = $users->firstWhere('email', 'tina@example.com');
+    expect($teacherRow['role'])->toBe('teacher');
+    expect($teacherRow['is_active'])->toBeTrue();
+
+    $studentRow = $users->firstWhere('email', 'sam@example.com');
+    expect($studentRow['role'])->toBe('student');
+    expect($studentRow['is_active'])->toBeTrue();
 });
 
 test('an admin can search by name or email', function () {
@@ -71,7 +87,8 @@ test('an admin can filter by role and by status', function () {
     $this->actingAs($admin)
         ->getJson('/api/v1/admin/users?role=teacher')
         ->assertOk()
-        ->assertJsonCount(1, 'data');
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.role', 'teacher');
 
     $this->actingAs($admin)
         ->getJson('/api/v1/admin/users?status=inactive')
