@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Modules\Admin\Exceptions\AdminActionDenied;
 use App\Modules\Admin\Services\AdminUserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -113,4 +114,46 @@ test('the service refuses to demote the last active admin', function () {
         ->toThrow(AdminActionDenied::class);
 
     expect($victim->fresh()->hasRole('admin'))->toBeTrue();
+});
+
+// A genuine concurrent race (two requests interleaving between the count
+// read and the write) can't be asserted deterministically in this
+// single-threaded Pest run without a flaky, timing-dependent test. What can
+// be proven here, deterministically: whenever the guard's count check is on
+// the path at all (target is an active admin), it goes through the locking
+// query — i.e. the emitted SQL actually carries "for update" — rather than
+// the old plain count(). That's the mechanism the fix depends on; the
+// non-concurrent behaviour around it is already covered by the seven tests
+// above, all of which still pass against this transactional implementation.
+
+test('deactivating an active admin runs the guard count under a row lock', function () {
+    $actor  = makeAdmin();
+    $target = makeAdmin(); // a second active admin, so the guard's count check executes and passes
+
+    DB::enableQueryLog();
+
+    $this->actingAs($actor)
+        ->postJson("/api/v1/admin/users/{$target->id}/deactivate")
+        ->assertOk();
+
+    $queries = collect(DB::getQueryLog())->pluck('query');
+    DB::flushQueryLog();
+
+    expect($queries->contains(fn ($sql) => str_contains(strtolower($sql), 'for update')))->toBeTrue();
+});
+
+test('demoting an active admin runs the guard count under a row lock', function () {
+    $actor  = makeAdmin();
+    $target = makeAdmin(); // a second active admin, so the guard's count check executes and passes
+
+    DB::enableQueryLog();
+
+    $this->actingAs($actor)
+        ->patchJson("/api/v1/admin/users/{$target->id}", ['role' => 'teacher'])
+        ->assertOk();
+
+    $queries = collect(DB::getQueryLog())->pluck('query');
+    DB::flushQueryLog();
+
+    expect($queries->contains(fn ($sql) => str_contains(strtolower($sql), 'for update')))->toBeTrue();
 });

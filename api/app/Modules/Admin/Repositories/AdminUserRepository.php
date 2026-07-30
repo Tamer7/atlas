@@ -36,11 +36,17 @@ class AdminUserRepository implements AdminUserRepositoryInterface
         return User::with('roles')->findOrFail($id);
     }
 
-    public function countActiveAdmins(): int
+    public function countActiveAdminsForUpdate(): int
     {
+        // Postgres rejects "FOR UPDATE" combined with an aggregate (count()
+        // would emit one), so lock the actual candidate rows and count the
+        // locked collection in PHP instead of asking the database to
+        // count-and-lock in a single query.
         return User::query()
             ->whereNull('deactivated_at')
             ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
+            ->lockForUpdate()
+            ->get()
             ->count();
     }
 

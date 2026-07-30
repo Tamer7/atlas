@@ -11,7 +11,16 @@ interface AdminUserRepositoryInterface
 
     public function findOrFail(string $id): User;
 
-    public function countActiveAdmins(): int;
+    /**
+     * Counts active admins after locking the matching rows (SELECT ... FOR
+     * UPDATE), so concurrent callers serialise on those rows instead of each
+     * reading a stale pre-write count. Must be called inside a transaction;
+     * the lock is released when that transaction commits or rolls back.
+     * This is the only counter in the module — nothing needs an
+     * un-locked count, and an un-locked variant sitting alongside this one
+     * would just invite a future caller to reintroduce the same race.
+     */
+    public function countActiveAdminsForUpdate(): int;
 
     public function create(array $data): User;
 

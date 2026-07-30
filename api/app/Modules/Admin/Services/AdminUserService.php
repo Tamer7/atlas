@@ -7,6 +7,7 @@ use App\Modules\Admin\Exceptions\AdminActionDenied;
 use App\Modules\Admin\Repositories\Contracts\AdminUserRepositoryInterface;
 use App\Modules\Enrollment\Services\InvitationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AdminUserService
@@ -46,13 +47,23 @@ class AdminUserService
     {
         $user = $this->users->findOrFail($id);
 
-        if (array_key_exists('role', $data) && $data['role'] !== 'admin') {
-            $this->assertDemotionAllowed($actor, $user);
+        // Demoting away from admin can strand the platform with no admin
+        // left, so the guard check and the role write must be atomic: wrap
+        // both in a transaction with a locked count, so two concurrent
+        // demotions of two different "last two" admins can't both read the
+        // pre-write count and both pass. See countActiveAdminsForUpdate().
+        $isDemotion = array_key_exists('role', $data) && $data['role'] !== 'admin';
+
+        if ($isDemotion) {
+            DB::transaction(function () use ($actor, $user, $data) {
+                $this->assertDemotionAllowed($actor, $user);
+                $this->users->setRole($user, $data['role']);
+            });
         }
 
         $this->users->updateProfile($user, $data);
 
-        if (array_key_exists('role', $data)) {
+        if (array_key_exists('role', $data) && ! $isDemotion) {
             $this->users->setRole($user, $data['role']);
         }
 
@@ -67,11 +78,17 @@ class AdminUserService
             throw AdminActionDenied::selfAction('deactivate');
         }
 
-        if ($user->hasRole('admin') && $user->isActive() && $this->users->countActiveAdmins() <= 1) {
-            throw AdminActionDenied::lastAdmin('deactivate');
-        }
+        // Same atomicity requirement as the demotion path above: the count
+        // check and the write must happen inside one transaction, against a
+        // locked read, or two concurrent deactivations of two different
+        // "last two" admins can both pass the check before either commits.
+        DB::transaction(function () use ($user) {
+            if ($user->hasRole('admin') && $user->isActive() && $this->users->countActiveAdminsForUpdate() <= 1) {
+                throw AdminActionDenied::lastAdmin('deactivate');
+            }
 
-        $this->users->setActive($user, false);
+            $this->users->setActive($user, false);
+        });
 
         return $this->users->findOrFail($id);
     }
@@ -95,7 +112,7 @@ class AdminUserService
             throw AdminActionDenied::selfAction('demote');
         }
 
-        if ($user->isActive() && $this->users->countActiveAdmins() <= 1) {
+        if ($user->isActive() && $this->users->countActiveAdminsForUpdate() <= 1) {
             throw AdminActionDenied::lastAdmin('demote');
         }
     }
