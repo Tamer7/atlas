@@ -12,4 +12,8 @@ interface AdminUserRepositoryInterface
     public function findOrFail(string $id): User;
 
     public function countActiveAdmins(): int;
+
+    public function create(array $data): User;
+
+    public function setRole(User $user, string $role): void;
 }

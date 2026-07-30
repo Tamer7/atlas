@@ -2,6 +2,7 @@
 
 namespace App\Modules\Admin\Repositories;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Modules\Admin\Repositories\Contracts\AdminUserRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -41,5 +42,16 @@ class AdminUserRepository implements AdminUserRepositoryInterface
             ->whereNull('deactivated_at')
             ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
             ->count();
+    }
+
+    public function create(array $data): User
+    {
+        return User::create($data);
+    }
+
+    public function setRole(User $user, string $role): void
+    {
+        // Exactly one role per user through the admin UI: replace, never append.
+        $user->roles()->sync([Role::firstOrCreate(['name' => $role])->id]);
     }
 }
