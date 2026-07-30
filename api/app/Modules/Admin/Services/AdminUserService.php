@@ -5,6 +5,7 @@ namespace App\Modules\Admin\Services;
 use App\Models\User;
 use App\Modules\Admin\Exceptions\AdminActionDenied;
 use App\Modules\Admin\Repositories\Contracts\AdminUserRepositoryInterface;
+use App\Modules\Auth\Services\AuthService;
 use App\Modules\Enrollment\Services\InvitationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class AdminUserService
     public function __construct(
         private readonly AdminUserRepositoryInterface $users,
         private readonly InvitationService $invitations,
+        private readonly AuthService $auth,
     ) {}
 
     public function list(array $filters, int $perPage = 25): LengthAwarePaginator
@@ -100,6 +102,16 @@ class AdminUserService
         $this->users->setActive($user, true);
 
         return $this->users->findOrFail($id);
+    }
+
+    public function detail(string $id): User
+    {
+        return $this->users->findForDetail($id);
+    }
+
+    public function sendPasswordReset(string $id): void
+    {
+        $this->auth->sendMagicLink($this->users->findOrFail($id)->email);
     }
 
     private function assertDemotionAllowed(User $actor, User $user): void

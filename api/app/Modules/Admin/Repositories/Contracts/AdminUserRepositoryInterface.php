@@ -12,6 +12,15 @@ interface AdminUserRepositoryInterface
     public function findOrFail(string $id): User;
 
     /**
+     * Loads a user with the relations the admin detail view needs
+     * (roles, courses owned as instructor, enrollments) pre-fetched, so the
+     * detail resource never triggers per-relation N+1 queries. Kept separate
+     * from findOrFail() so list/update paths aren't forced to pay for
+     * relations they don't render.
+     */
+    public function findForDetail(string $id): User;
+
+    /**
      * Counts active admins after locking the matching rows (SELECT ... FOR
      * UPDATE), so concurrent callers serialise on those rows instead of each
      * reading a stale pre-write count. Must be called inside a transaction;

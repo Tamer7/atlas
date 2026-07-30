@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Admin\Exceptions\AdminActionDenied;
 use App\Modules\Admin\Requests\CreateUserRequest;
 use App\Modules\Admin\Requests\UpdateUserRequest;
+use App\Modules\Admin\Resources\AdminUserDetailResource;
 use App\Modules\Admin\Resources\AdminUserResource;
 use App\Modules\Admin\Services\AdminUserService;
 use Illuminate\Http\JsonResponse;
@@ -64,5 +65,19 @@ class AdminUserController extends Controller
         return response()->json([
             'data' => new AdminUserResource($this->users->reactivate($id)),
         ]);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        return response()->json([
+            'data' => new AdminUserDetailResource($this->users->detail($id)),
+        ]);
+    }
+
+    public function passwordReset(string $id): JsonResponse
+    {
+        $this->users->sendPasswordReset($id);
+
+        return response()->json(['message' => 'Password reset link sent.']);
     }
 }

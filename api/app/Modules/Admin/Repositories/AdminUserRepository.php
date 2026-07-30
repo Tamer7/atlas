@@ -36,6 +36,11 @@ class AdminUserRepository implements AdminUserRepositoryInterface
         return User::with('roles')->findOrFail($id);
     }
 
+    public function findForDetail(string $id): User
+    {
+        return User::with(['roles', 'courses', 'enrollments'])->findOrFail($id);
+    }
+
     public function countActiveAdminsForUpdate(): int
     {
         // Postgres rejects "FOR UPDATE" combined with an aggregate (count()
