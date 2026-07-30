@@ -90,7 +90,7 @@ export function Sidebar() {
         <Avatar name={user?.name ?? '??'} color={user?.color} />
         <div className="who">
           <b>{user?.name ?? '…'}</b>
-          <span>{isTeacher ? 'Instructor' : 'Student'}</span>
+          <span>{isAdmin ? 'Administrator' : isTeacher ? 'Instructor' : 'Student'}</span>
         </div>
         <button className="btn btn-ghost btn-icon" title="Sign out" onClick={() => logout.mutate()}>
           <LogOut size={14} />

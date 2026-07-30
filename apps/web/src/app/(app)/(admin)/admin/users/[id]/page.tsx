@@ -20,6 +20,9 @@ export default function AdminUserDetailPage({
   const update = useUpdateAdminUser(id)
   const resetPassword = useSendPasswordReset()
   const [error, setError] = useState<string | null>(null)
+  const [resetResult, setResetResult] = useState<
+    { status: 'success' } | { status: 'error'; message: string } | null
+  >(null)
 
   if (isLoading) return <p className="muted">Loading…</p>
   if (isError || !user) return <p className="muted">Could not load this user.</p>
@@ -33,6 +36,18 @@ export default function AdminUserDetailPage({
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
       setError(message ?? 'Could not change the role.')
     }
+  }
+
+  const handleSendPasswordReset = () => {
+    setResetResult(null)
+    resetPassword.mutate(id, {
+      onSuccess: () => setResetResult({ status: 'success' }),
+      onError: err => {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        setResetResult({ status: 'error', message: message ?? 'Could not send the reset link.' })
+      },
+    })
   }
 
   return (
@@ -57,19 +72,26 @@ export default function AdminUserDetailPage({
         >
           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
-        {error && <p className="muted" role="alert">{error}</p>}
+        {error && (
+          <p className="help" style={{ color: 'var(--danger)' }} role="alert">{error}</p>
+        )}
       </section>
 
       <section style={{ marginBottom: 24 }}>
         <h2 className="h2">Access</h2>
         <button
           className="btn"
-          onClick={() => resetPassword.mutate(id)}
+          onClick={handleSendPasswordReset}
           disabled={resetPassword.isPending}
         >
           {resetPassword.isPending ? 'Sending…' : 'Send password reset link'}
         </button>
-        {resetPassword.isSuccess && <p className="muted">Reset link sent.</p>}
+        {resetResult?.status === 'success' && <p className="muted">Reset link sent.</p>}
+        {resetResult?.status === 'error' && (
+          <p className="help" style={{ color: 'var(--danger)' }} role="alert">
+            {resetResult.message}
+          </p>
+        )}
       </section>
 
       <section style={{ marginBottom: 24 }}>
