@@ -13,9 +13,26 @@ async function fetchUser(request: NextRequest): Promise<GuardUser | null> {
   const cookie = request.headers.get('cookie');
   if (!cookie) return null;
 
+  // Sanctum's EnsureFrontendRequestsAreStateful middleware decides whether a
+  // request is "stateful" (i.e. cookie/session auth applies at all) purely
+  // from `Referer ?: Origin` matching SANCTUM_STATEFUL_DOMAINS. Without one
+  // of those headers it returns false, so EncryptCookies/StartSession/
+  // AuthenticateSession never run and /auth/me 401s even with a perfectly
+  // valid session cookie -- which would fail every user closed into a login
+  // loop. We must synthesize a Referer from the INBOUND request's public
+  // host, not request.nextUrl (that's the internal host behind Caddy and
+  // will never match the configured stateful domain). Do not remove this.
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') ?? 'https';
+  const referer = host ? `${proto}://${host}/` : undefined;
+
   try {
     const res = await fetch(`${API_URL}/api/v1/auth/me`, {
-      headers: { cookie, accept: 'application/json' },
+      headers: {
+        cookie,
+        accept: 'application/json',
+        ...(referer ? { referer } : {}),
+      },
       cache: 'no-store',
       // Fail closed: bounded timeout prevents hung backends from leaving requests
       // pending indefinitely. AbortError is caught below, treated as unauthenticated.
