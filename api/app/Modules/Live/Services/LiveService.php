@@ -187,11 +187,28 @@ class LiveService
         ]);
     }
 
+    /**
+     * The Egress API is REST (Twirp) over HTTPS, but `services.livekit.url`
+     * holds the client-facing WebSocket URL (wss://…) that the browser SDK
+     * needs. Handing that to the HTTP client fails with
+     * "The scheme 'wss' is not supported". Same host, different scheme.
+     */
+    public function egressHost(): ?string
+    {
+        $url = config('services.livekit.url');
+
+        if (! is_string($url) || $url === '') {
+            return null;
+        }
+
+        return str_replace(['wss://', 'ws://'], ['https://', 'http://'], $url);
+    }
+
     private function startEgress(LiveClass $class): ?string
     {
         $key    = config('services.livekit.api_key');
         $secret = config('services.livekit.api_secret');
-        $host   = config('services.livekit.url');
+        $host   = $this->egressHost();
         $bucket = config('services.livekit.egress_bucket');
 
         if (! $key || ! $secret || ! $host || ! $bucket) {
@@ -230,7 +247,7 @@ class LiveService
 
         $key    = config('services.livekit.api_key');
         $secret = config('services.livekit.api_secret');
-        $host   = config('services.livekit.url');
+        $host   = $this->egressHost();
 
         if (! $key || ! $secret || ! $host) {
             return null;
