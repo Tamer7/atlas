@@ -38,6 +38,6 @@ class AdminUserService
 
         $this->users->setRole($user, $data['role']);
 
-        return $user->fresh('roles');
+        return $this->users->findOrFail($user->id);
     }
 }

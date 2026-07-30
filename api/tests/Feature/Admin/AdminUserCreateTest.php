@@ -4,6 +4,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Modules\Enrollment\Models\Invitation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
@@ -41,6 +42,26 @@ test('password mode creates an active user with the requested role', function ()
     expect($created)->not->toBeNull()
         ->and($created->hasRole('teacher'))->toBeTrue()
         ->and($created->isActive())->toBeTrue();
+
+    // Prove the stored password actually authenticates end-to-end, not just
+    // that some hash was written — guards against a future double-hashing
+    // or storage regression that hasRole()/isActive() would never catch.
+    //
+    // The admin POST above authenticates via the sanctum guard, which
+    // switches Laravel's default auth guard to 'sanctum' for the remainder
+    // of this (shared) test application instance — a real second HTTP
+    // request boots a fresh container and never has this problem. Restore
+    // the default guard so Auth::attempt() below runs against the session
+    // guard as it would for a genuine unauthenticated login request.
+    Auth::shouldUse('web');
+    Auth::forgetGuards();
+
+    $this->postJson('/api/v1/auth/login', [
+        'email'    => 'tina@example.com',
+        'password' => 'secret-password',
+    ])
+        ->assertOk()
+        ->assertJsonPath('data.user.id', $created->id);
 });
 
 test('invite mode creates an invitation carrying the role and sends no account', function () {
@@ -110,4 +131,44 @@ test('non-admins cannot create users', function () {
             'password' => 'secret-password',
         ])
         ->assertStatus(403);
+});
+
+test('accepting an admin-created invitation assigns the invited role, not student', function () {
+    $this->actingAs(adminUser())
+        ->postJson('/api/v1/admin/users', [
+            'mode'  => 'invite',
+            'email' => 'futureteacher@example.com',
+            'role'  => 'teacher',
+        ])
+        ->assertCreated();
+
+    $rawToken = null;
+
+    Mail::assertQueued(\App\Modules\Enrollment\Mail\InvitationMail::class, function ($mail) use (&$rawToken) {
+        preg_match('/token=(.+)$/', $mail->acceptUrl, $matches);
+        $rawToken = $matches[1] ?? null;
+
+        return true;
+    });
+
+    expect($rawToken)->not->toBeNull();
+
+    // The admin POST above authenticates via the sanctum guard, which
+    // switches Laravel's default auth guard to 'sanctum' for the remainder
+    // of this (shared) test application instance — a real second HTTP
+    // request boots a fresh container and never has this problem. Restore
+    // the default guard so accept() below, which calls the guard-agnostic
+    // Auth::login(), behaves as it would for a genuine unauthenticated
+    // invitee request instead of hitting Sanctum's RequestGuard (no login()).
+    Auth::shouldUse('web');
+    Auth::forgetGuards();
+
+    $this->getJson('/api/v1/invitations/accept?token=' . $rawToken)
+        ->assertOk();
+
+    $created = User::where('email', 'futureteacher@example.com')->first();
+
+    expect($created)->not->toBeNull()
+        ->and($created->hasRole('teacher'))->toBeTrue()
+        ->and($created->hasRole('student'))->toBeFalse();
 });

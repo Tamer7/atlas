@@ -61,7 +61,7 @@ class InvitationService
             ]);
         }
 
-        $this->userRepository->assignRole($user, 'student');
+        $this->userRepository->assignRole($user, $invitation->role ?? 'student');
 
         foreach ($invitation->course_ids as $courseId) {
             $this->enrollmentRepository->enroll($user, $courseId);
