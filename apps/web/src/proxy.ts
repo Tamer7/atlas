@@ -38,12 +38,37 @@ async function fetchUser(request: NextRequest): Promise<GuardUser | null> {
       // pending indefinitely. AbortError is caught below, treated as unauthenticated.
       signal: AbortSignal.timeout(3000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // TEMPORARY DIAGNOSTIC — remove once the intermittent-logout cause is found.
+      console.warn(
+        `[guard] /auth/me -> ${res.status} path=${request.nextUrl.pathname} ` +
+          `rsc=${request.headers.get('rsc') ?? '-'} ` +
+          `prefetch=${request.headers.get('next-router-prefetch') ?? '-'} ` +
+          `referer=${referer ?? 'NONE'} cookieBytes=${cookie.length}`,
+      );
+      return null;
+    }
 
     const body = await res.json();
     const user = body?.data?.user;
-    return user && Array.isArray(user.roles) ? { roles: user.roles } : null;
-  } catch {
+
+    if (!user || !Array.isArray(user.roles)) {
+      // TEMPORARY DIAGNOSTIC — a 200 whose body we could not read as a user.
+      console.warn(
+        `[guard] /auth/me -> 200 but unusable body path=${request.nextUrl.pathname} ` +
+          `keys=${Object.keys(body ?? {}).join(',') || 'none'}`,
+      );
+      return null;
+    }
+
+    return { roles: user.roles };
+  } catch (err: unknown) {
+    // TEMPORARY DIAGNOSTIC — distinguishes a thrown fetch (timeout, DNS, reset)
+    // from an honest non-200 above. Remove with the block above.
+    console.warn(
+      `[guard] /auth/me threw path=${request.nextUrl.pathname} ` +
+        `name=${(err as Error)?.name ?? 'unknown'} msg=${(err as Error)?.message ?? ''}`,
+    );
     // Fail closed. An API outage, timeout, or any error must never expose the app shell.
     return null;
   }
