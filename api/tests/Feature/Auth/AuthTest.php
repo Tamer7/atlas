@@ -125,6 +125,25 @@ test('expired magic link token returns 422', function () {
         ->assertUnprocessable();
 });
 
+test('a deactivated user cannot log in via magic link', function () {
+    User::factory()->create([
+        'email'          => 'gone-magic@example.com',
+        'deactivated_at' => now(),
+    ]);
+
+    $rawToken = \Illuminate\Support\Str::random(64);
+    \App\Modules\Auth\Models\MagicLinkToken::create([
+        'email'      => 'gone-magic@example.com',
+        'token'      => hash('sha256', $rawToken),
+        'expires_at' => now()->addMinutes(15),
+    ]);
+
+    $this->getJson('/api/v1/auth/magic-link/verify?token=' . $rawToken)
+        ->assertStatus(422);
+
+    $this->assertGuest();
+});
+
 test('registered user gets student role', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'name'                  => 'New Student',

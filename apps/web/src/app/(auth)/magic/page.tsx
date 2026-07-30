@@ -4,24 +4,28 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { verifyMagicLink } from '@/lib/api/auth';
 import { useQueryClient } from '@tanstack/react-query';
+import { landingPathFor } from '@/lib/auth/guard';
 
 function MagicLinkCallback() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
+  const token = searchParams.get('token');
+  // Computed at render time rather than set from inside the effect below:
+  // setting state synchronously at the top of an effect body causes an
+  // avoidable extra render (react-hooks/set-state-in-effect); the "no token"
+  // case is knowable immediately from the URL, so it doesn't need one.
+  const [error, setError] = useState<string | null>(
+    token ? null : 'No sign-in token found in URL.'
+  );
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (!token) {
-      setError('No sign-in token found in URL.');
-      return;
-    }
+    if (!token) return;
 
     verifyMagicLink(token)
       .then((user) => {
         queryClient.setQueryData(['auth', 'me'], user);
-        router.push('/dashboard');
+        router.push(landingPathFor(user));
       })
       .catch((err) => {
         const msg =
@@ -29,7 +33,7 @@ function MagicLinkCallback() {
             ?.data?.message ?? 'Invalid or expired sign-in link.';
         setError(msg);
       });
-  }, [searchParams, router, queryClient]);
+  }, [token, router, queryClient]);
 
   if (error) {
     return (

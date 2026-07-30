@@ -2,11 +2,11 @@
 import { useState } from 'react'
 import { Avatar, Field, Toggle, Badge, SegControl } from '@/components/ui'
 import { Mail, Lock } from '@/components/ui'
-import { useRole } from '@/contexts/RoleContext'
+import { useRole, type AppRole } from '@/contexts/RoleContext'
 import { useAuth } from '@/contexts/AuthContext'
 
 // ── Profile Tab ────────────────────────────────────────────────────────────────
-function ProfileTab({ role }: { role: 'student' | 'teacher' }) {
+function ProfileTab({ role }: { role: AppRole }) {
   const { user } = useAuth()
   const name = user?.name ?? ''
   const email = user?.email ?? ''
