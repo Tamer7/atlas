@@ -76,7 +76,13 @@ class AuthService
     {
         $user = $this->userRepository->findByMagicLinkToken($token);
 
-        if (! $user) {
+        // Same generic exception + message for "no such token" and "token
+        // valid but the account is deactivated", mirroring login()'s
+        // deliberate reuse of one message for both its failure branches:
+        // distinguishing the two here would leak account-existence/status
+        // to whoever holds (or guesses) a token, and the session must never
+        // be established for a deactivated account in the first place.
+        if (! $user || ! $user->isActive()) {
             throw new \InvalidArgumentException('Invalid or expired sign-in link.');
         }
 

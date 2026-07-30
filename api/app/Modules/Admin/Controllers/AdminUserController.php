@@ -76,7 +76,11 @@ class AdminUserController extends Controller
 
     public function passwordReset(string $id): JsonResponse
     {
-        $this->users->sendPasswordReset($id);
+        try {
+            $this->users->sendPasswordReset($id);
+        } catch (AdminActionDenied $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return response()->json(['message' => 'Password reset link sent.']);
     }

@@ -15,4 +15,9 @@ class AdminActionDenied extends Exception
     {
         return new self("You cannot {$what} the last remaining administrator.");
     }
+
+    public static function inactiveUser(string $what): self
+    {
+        return new self("You cannot {$what} an inactive user.");
+    }
 }

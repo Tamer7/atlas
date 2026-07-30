@@ -111,7 +111,13 @@ class AdminUserService
 
     public function sendPasswordReset(string $id): void
     {
-        $this->auth->sendMagicLink($this->users->findOrFail($id)->email);
+        $user = $this->users->findOrFail($id);
+
+        if (! $user->isActive()) {
+            throw AdminActionDenied::inactiveUser('reset the password for');
+        }
+
+        $this->auth->sendMagicLink($user->email);
     }
 
     private function assertDemotionAllowed(User $actor, User $user): void
