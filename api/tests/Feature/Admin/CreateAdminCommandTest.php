@@ -3,6 +3,8 @@
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Tester\CommandTester;
 
 uses(RefreshDatabase::class);
 
@@ -75,6 +77,56 @@ test('a non-interactive run with no password fails cleanly instead of crashing',
         ->expectsOutputToContain('A password is required when creating a new administrator.');
 
     expect(User::where('email', 'nopass@example.com')->exists())->toBeFalse();
+});
+
+test('a real closed stdin (no --no-interaction, no TTY) exits cleanly instead of crashing', function () {
+    // $this->artisan() cannot exercise a real stdin EOF at all: it mocks
+    // OutputStyle::askQuestion() itself (PendingCommand::mockConsoleOutput()),
+    // so any call to secret()/ask() without an expectsQuestion() expectation
+    // throws Mockery's NoMatchingExpectationException before Symfony's real
+    // QuestionHelper ever runs. Symfony's CommandTester drives the real
+    // QuestionHelper against a real input stream instead, so it can
+    // reproduce a genuine EOF. The command is resolved via Artisan::all()
+    // rather than `new CreateAdminCommand(...)` because
+    // Illuminate\Console\Command::run() needs setLaravel() to have been
+    // called (it does `$this->laravel->make(OutputStyle::class, ...)`),
+    // which only happens when a command is added to the Artisan application.
+    //
+    // IMPORTANT — what this test does NOT prove: it does not prove the
+    // `catch (MissingInputException)` block in the command is reached. A
+    // verified negative control (temporarily deleting that catch, rerunning,
+    // restoring it — see task-9-report.md "Fix round 2") showed this test
+    // keeps passing either way. Root cause, confirmed with a standalone
+    // probe directly against Symfony\Component\Console\Helper\QuestionHelper:
+    // Command::secret() calls Question::setHiddenFallback(true) (its
+    // default), and with that flag on, QuestionHelper's own hidden-question
+    // handling swallows MissingInputException internally and returns null
+    // instead of ever throwing out of secret() — verified by asking the same
+    // empty stream with setHiddenFallback(false), which DID let
+    // MissingInputException propagate. So for this command's specific
+    // `$this->secret(...)` call, that catch is currently unreachable dead
+    // code; what's actually proved below is the end-to-end outcome (clean
+    // exit 1 + the friendly message, not a stack trace) for a real EOF,
+    // which is what matters operationally, regardless of which layer
+    // prevents the crash.
+    $command = Artisan::all()['atlas:create-admin'];
+    $tester  = new CommandTester($command);
+
+    // setInputs([]) backs the command's input stream with an in-memory
+    // stream containing zero bytes, i.e. already at EOF — the same
+    // condition QuestionHelper hits reading from a closed/absent TTY.
+    // Interactivity is deliberately left unset so it keeps Symfony's
+    // ArrayInput default of true, matching a real invocation with no
+    // --no-interaction flag (configureIO() only flips it on that explicit
+    // flag, never on a missing TTY).
+    $tester->setInputs([]);
+
+    $exitCode = $tester->execute(['email' => 'eof@example.com']);
+
+    expect($exitCode)->toBe(1)
+        ->and($tester->getDisplay())->toContain('A password is required when creating a new administrator.');
+
+    expect(User::where('email', 'eof@example.com')->exists())->toBeFalse();
 });
 
 test('promoting a non-admin existing user reports the escalation explicitly', function () {
