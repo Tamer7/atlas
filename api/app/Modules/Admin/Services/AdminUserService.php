@@ -3,6 +3,7 @@
 namespace App\Modules\Admin\Services;
 
 use App\Models\User;
+use App\Modules\Admin\Exceptions\AdminActionDenied;
 use App\Modules\Admin\Repositories\Contracts\AdminUserRepositoryInterface;
 use App\Modules\Enrollment\Services\InvitationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -39,5 +40,63 @@ class AdminUserService
         $this->users->setRole($user, $data['role']);
 
         return $this->users->findOrFail($user->id);
+    }
+
+    public function update(User $actor, string $id, array $data): User
+    {
+        $user = $this->users->findOrFail($id);
+
+        if (array_key_exists('role', $data) && $data['role'] !== 'admin') {
+            $this->assertDemotionAllowed($actor, $user);
+        }
+
+        $this->users->updateProfile($user, $data);
+
+        if (array_key_exists('role', $data)) {
+            $this->users->setRole($user, $data['role']);
+        }
+
+        return $this->users->findOrFail($id);
+    }
+
+    public function deactivate(User $actor, string $id): User
+    {
+        $user = $this->users->findOrFail($id);
+
+        if ($actor->id === $user->id) {
+            throw AdminActionDenied::selfAction('deactivate');
+        }
+
+        if ($user->hasRole('admin') && $user->isActive() && $this->users->countActiveAdmins() <= 1) {
+            throw AdminActionDenied::lastAdmin('deactivate');
+        }
+
+        $this->users->setActive($user, false);
+
+        return $this->users->findOrFail($id);
+    }
+
+    public function reactivate(string $id): User
+    {
+        $user = $this->users->findOrFail($id);
+
+        $this->users->setActive($user, true);
+
+        return $this->users->findOrFail($id);
+    }
+
+    private function assertDemotionAllowed(User $actor, User $user): void
+    {
+        if (! $user->hasRole('admin')) {
+            return;
+        }
+
+        if ($actor->id === $user->id) {
+            throw AdminActionDenied::selfAction('demote');
+        }
+
+        if ($user->isActive() && $this->users->countActiveAdmins() <= 1) {
+            throw AdminActionDenied::lastAdmin('demote');
+        }
     }
 }

@@ -54,4 +54,17 @@ class AdminUserRepository implements AdminUserRepositoryInterface
         // Exactly one role per user through the admin UI: replace, never append.
         $user->roles()->sync([Role::firstOrCreate(['name' => $role])->id]);
     }
+
+    public function updateProfile(User $user, array $data): void
+    {
+        $user->fill(array_intersect_key($data, array_flip(['name', 'email'])))->save();
+    }
+
+    public function setActive(User $user, bool $active): void
+    {
+        // deactivated_at is not in #[Fillable] (see interface docblock); a
+        // plain fill()/update() would silently drop it. forceFill() is the
+        // deliberate, authorised bypass for this one column.
+        $user->forceFill(['deactivated_at' => $active ? null : now()])->save();
+    }
 }

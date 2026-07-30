@@ -3,7 +3,9 @@
 namespace App\Modules\Admin\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Admin\Exceptions\AdminActionDenied;
 use App\Modules\Admin\Requests\CreateUserRequest;
+use App\Modules\Admin\Requests\UpdateUserRequest;
 use App\Modules\Admin\Resources\AdminUserResource;
 use App\Modules\Admin\Services\AdminUserService;
 use Illuminate\Http\JsonResponse;
@@ -33,5 +35,34 @@ class AdminUserController extends Controller
             'data'    => $user ? new AdminUserResource($user) : null,
             'message' => $user ? 'User created.' : 'Invitation sent.',
         ], 201);
+    }
+
+    public function update(UpdateUserRequest $request, string $id): JsonResponse
+    {
+        try {
+            $user = $this->users->update($request->user(), $id, $request->validated());
+        } catch (AdminActionDenied $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => new AdminUserResource($user)]);
+    }
+
+    public function deactivate(Request $request, string $id): JsonResponse
+    {
+        try {
+            $user = $this->users->deactivate($request->user(), $id);
+        } catch (AdminActionDenied $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => new AdminUserResource($user)]);
+    }
+
+    public function reactivate(string $id): JsonResponse
+    {
+        return response()->json([
+            'data' => new AdminUserResource($this->users->reactivate($id)),
+        ]);
     }
 }
