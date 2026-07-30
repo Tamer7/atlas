@@ -66,6 +66,7 @@ export default function AdminUserDetailPage({
       <section style={{ marginBottom: 24 }}>
         <h2 className="h2">Role</h2>
         <select
+          aria-label="Change role"
           value={user.role}
           onChange={e => changeRole(e.target.value as AdminRole)}
           disabled={update.isPending}

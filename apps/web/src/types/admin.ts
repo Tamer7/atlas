@@ -20,6 +20,13 @@ export interface AdminUserFilters {
   status?: 'active' | 'inactive' | '';
 }
 
+/** A page of the admin user list, plus the total row count across all pages
+ * so callers can tell when the returned rows are a partial view. */
+export interface AdminUserPage {
+  users: AdminUser[];
+  total: number;
+}
+
 export type CreateAdminUserPayload =
   | { mode: 'invite'; email: string; role: AdminRole }
   | { mode: 'password'; name: string; email: string; role: AdminRole; password: string };

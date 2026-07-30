@@ -29,7 +29,9 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const { data: users = [], isLoading, isError } = useAdminUsers({ search, role, status })
+  const { data, isLoading, isError } = useAdminUsers({ search, role, status })
+  const users = data?.users ?? []
+  const total = data?.total ?? 0
   const deactivate = useDeactivateUser()
   const reactivate = useReactivateUser()
 
@@ -54,6 +56,7 @@ export default function AdminUsersPage() {
         />
         <select
           className="input"
+          aria-label="Filter by role"
           value={role}
           onChange={e => setRole(e.target.value as AdminRole | '')}
         >
@@ -63,6 +66,7 @@ export default function AdminUsersPage() {
         </select>
         <select
           className="input"
+          aria-label="Filter by status"
           value={status}
           onChange={e => setStatus(e.target.value as 'active' | 'inactive' | '')}
         >
@@ -71,6 +75,12 @@ export default function AdminUsersPage() {
           <option value="inactive">Deactivated</option>
         </select>
       </div>
+
+      {!isLoading && !isError && users.length > 0 && users.length < total && (
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Showing {users.length} of {total} — refine your search to narrow results.
+        </p>
+      )}
 
       {actionError && (
         <div className="help" style={{ color: 'var(--danger)', marginBottom: 16 }} role="alert">
