@@ -142,3 +142,36 @@ test('already accepted invitation token returns 422', function () {
         ->assertUnprocessable()
         ->assertJsonPath('message', 'Invalid or expired invitation.');
 });
+
+test('a deactivated user cannot accept an invitation', function () {
+    $teacher = User::factory()->teacher()->create();
+
+    // The invitee already has an account, but was deactivated by an admin
+    // after the invitation was sent and before it was accepted.
+    User::factory()->create([
+        'email'          => 'deactivated-invitee@example.com',
+        'deactivated_at' => now(),
+    ]);
+
+    $rawToken = \Illuminate\Support\Str::random(64);
+
+    Invitation::create([
+        'email'      => 'deactivated-invitee@example.com',
+        'invited_by' => $teacher->id,
+        'token'      => hash('sha256', $rawToken),
+        'course_ids' => [],
+        'expires_at' => now()->addDays(7),
+    ]);
+
+    $this->getJson('/api/v1/invitations/accept?token=' . $rawToken)
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'Invalid or expired invitation.');
+
+    $this->assertGuest();
+
+    // Rejection must happen before any mutation: no role assignment, no
+    // enrollment, and the invitation itself must not be marked accepted.
+    $this->assertNull(
+        Invitation::where('email', 'deactivated-invitee@example.com')->value('accepted_at')
+    );
+});

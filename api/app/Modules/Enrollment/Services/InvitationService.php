@@ -61,6 +61,18 @@ class InvitationService
             ]);
         }
 
+        // Same generic exception + message for "no such/expired invitation"
+        // and "invitation valid but the account is deactivated", mirroring
+        // AuthService::verifyMagicLink()'s deliberate reuse of one message
+        // for both its failure branches: distinguishing the two here would
+        // leak account status to whoever holds the token. This must run
+        // before assignRole/enroll below -- a deactivated account may not be
+        // mutated (role granted, courses enrolled) or logged in just because
+        // a stale invitation token still resolves.
+        if (! $user->isActive()) {
+            throw new \InvalidArgumentException('Invalid or expired invitation.');
+        }
+
         $this->userRepository->assignRole($user, $invitation->role ?? 'student');
 
         foreach ($invitation->course_ids as $courseId) {
