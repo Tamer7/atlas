@@ -11,7 +11,7 @@ class Invitation extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['email', 'invited_by', 'token', 'course_ids', 'expires_at', 'accepted_at'];
+    protected $fillable = ['email', 'invited_by', 'token', 'course_ids', 'expires_at', 'accepted_at', 'role'];
 
     protected $casts = [
         'course_ids'  => 'array',

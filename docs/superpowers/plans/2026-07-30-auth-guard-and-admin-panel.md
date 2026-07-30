@@ -600,7 +600,11 @@ git commit -m "feat(api): block deactivated users at login and mid-session"
 **Interfaces:**
 - Produces:
   - `AdminUserRepositoryInterface::paginate(array $filters, int $perPage): LengthAwarePaginator`
+<<<<<<< HEAD
   - `AdminUserRepositoryInterface::find(string $id): ?User`
+=======
+  - `AdminUserRepositoryInterface::findOrFail(string $id): User`
+>>>>>>> 44c3c1718ceb631a1b3f07f1135e5c7332af51f6
   - `AdminUserRepositoryInterface::countActiveAdmins(): int`
   - `AdminUserService::list(array $filters, int $perPage): LengthAwarePaginator`
   - Route names under `/api/v1/admin/users`.
@@ -935,7 +939,11 @@ git commit -m "feat(api): add Admin module with user list endpoint"
 - Produces:
   - `AdminUserRepositoryInterface::create(array $data): User`
   - `AdminUserRepositoryInterface::setRole(User $user, string $role): void`
+<<<<<<< HEAD
   - `AdminUserService::create(array $data): ?User` — returns the User for `password` mode, `null` for `invite` mode.
+=======
+  - `AdminUserService::create(User $actor, array $data): ?User` — returns the User for `password` mode, `null` for `invite` mode. `$actor` is the acting admin, recorded as the invitation's `invited_by`.
+>>>>>>> 44c3c1718ceb631a1b3f07f1135e5c7332af51f6
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1142,10 +1150,17 @@ class AdminUserService
     }
 
     /** Returns the created User in password mode, or null in invite mode. */
+<<<<<<< HEAD
     public function create(array $data): ?User
     {
         if ($data['mode'] === 'invite') {
             $this->invitations->inviteWithRole($data['email'], $data['role']);
+=======
+    public function create(User $actor, array $data): ?User
+    {
+        if ($data['mode'] === 'invite') {
+            $this->invitations->inviteWithRole($actor, $data['email'], $data['role']);
+>>>>>>> 44c3c1718ceb631a1b3f07f1135e5c7332af51f6
 
             return null;
         }
@@ -1166,6 +1181,7 @@ class AdminUserService
 
 - [ ] **Step 6: Add `inviteWithRole` to InvitationService**
 
+<<<<<<< HEAD
 Open `api/app/Modules/Enrollment/Services/InvitationService.php`. Add a method mirroring the existing invite method but persisting the role, and set `role` on the created invitation row. Also add `'role'` to `Invitation::$fillable` in `api/app/Modules/Enrollment/Models/Invitation.php`.
 
 ```php
@@ -1176,6 +1192,33 @@ Open `api/app/Modules/Enrollment/Services/InvitationService.php`. Add a method m
 ```
 
 Adjust the existing `invite()` signature to `invite(string $email, array $courseIds = [], string $role = 'student')` and include `'role' => $role` in the payload it persists. Existing callers pass no role and keep today's behaviour.
+=======
+Open `api/app/Modules/Enrollment/Services/InvitationService.php`. Its existing signature is:
+
+```php
+    public function invite(User $teacher, string $email, array $courseIds): void
+```
+
+Widen it with a defaulted trailing parameter so every existing caller keeps working unchanged, and persist the new column:
+
+```php
+    public function invite(User $teacher, string $email, array $courseIds, string $role = 'student'): void
+```
+
+Include `'role' => $role` in the payload it persists, and add the admin-facing wrapper:
+
+```php
+    public function inviteWithRole(User $inviter, string $email, string $role): void
+    {
+        $this->invite($inviter, $email, [], $role);
+    }
+```
+
+The acting admin is passed as `$teacher` so the invitation's `invited_by` foreign key records who actually sent it.
+
+Also add `'role'` to `$fillable` in `api/app/Modules/Enrollment/Models/Invitation.php`, whose current value is
+`['email', 'invited_by', 'token', 'course_ids', 'expires_at', 'accepted_at']` — without this the column is silently dropped on create by mass-assignment protection.
+>>>>>>> 44c3c1718ceb631a1b3f07f1135e5c7332af51f6
 
 - [ ] **Step 7: Add the controller action and route**
 
@@ -1184,7 +1227,11 @@ Add to `AdminUserController` (with `use App\Modules\Admin\Requests\CreateUserReq
 ```php
     public function store(CreateUserRequest $request): JsonResponse
     {
+<<<<<<< HEAD
         $user = $this->users->create($request->validated());
+=======
+        $user = $this->users->create($request->user(), $request->validated());
+>>>>>>> 44c3c1718ceb631a1b3f07f1135e5c7332af51f6
 
         return response()->json([
             'data'    => $user ? new AdminUserResource($user) : null,

@@ -1,6 +1,7 @@
 <?php
 
 use App\Providers\AppServiceProvider;
+use App\Modules\Admin\AdminServiceProvider;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Assessment\AssessmentServiceProvider;
 use App\Modules\Course\CourseServiceProvider;
@@ -12,6 +13,7 @@ use App\Modules\Profile\ProfileServiceProvider;
 
 return [
     AppServiceProvider::class,
+    AdminServiceProvider::class,
     AuthServiceProvider::class,
     AnalyticsServiceProvider::class,
     AssessmentServiceProvider::class,

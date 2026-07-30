@@ -71,4 +71,11 @@ export const API_ROUTES = {
     studentComments: (studentId: string) => `/api/v1/teacher/students/${studentId}/comments`,
     comment: (id: string) => `/api/v1/teacher/comments/${id}`,
   },
+  admin: {
+    users: '/api/v1/admin/users',
+    user: (id: string) => `/api/v1/admin/users/${id}`,
+    deactivate: (id: string) => `/api/v1/admin/users/${id}/deactivate`,
+    reactivate: (id: string) => `/api/v1/admin/users/${id}/reactivate`,
+    passwordReset: (id: string) => `/api/v1/admin/users/${id}/password-reset`,
+  },
 } as const;

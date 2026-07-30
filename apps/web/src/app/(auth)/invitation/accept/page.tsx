@@ -4,24 +4,28 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { acceptInvitation } from '@/lib/api/enrollment';
+import { landingPathFor } from '@/lib/auth/guard';
 
 function InvitationAcceptCallback() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
+  const token = searchParams.get('token');
+  // Computed at render time rather than set from inside the effect below:
+  // setting state synchronously at the top of an effect body causes an
+  // avoidable extra render (react-hooks/set-state-in-effect); the "no token"
+  // case is knowable immediately from the URL, so it doesn't need one.
+  const [error, setError] = useState<string | null>(
+    token ? null : 'No invitation token found in URL.'
+  );
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (!token) {
-      setError('No invitation token found in URL.');
-      return;
-    }
+    if (!token) return;
 
     acceptInvitation(token)
       .then((user) => {
         queryClient.setQueryData(['auth', 'me'], user);
-        router.replace('/dashboard');
+        router.replace(landingPathFor(user));
       })
       .catch((err) => {
         const msg =
@@ -29,7 +33,7 @@ function InvitationAcceptCallback() {
             ?.data?.message ?? 'Invalid or expired invitation.';
         setError(msg);
       });
-  }, [searchParams, router, queryClient]);
+  }, [token, router, queryClient]);
 
   if (error) {
     return (
