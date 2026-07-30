@@ -1,12 +1,15 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, BookOpen, Radio, Settings, Users, Pencil, LogOut, ClipboardCheck, TrendingUp, CircleUser, CalendarDays } from 'lucide-react'
+import { Home, BookOpen, Radio, Settings, Users, Pencil, LogOut, ClipboardCheck, TrendingUp, CircleUser, CalendarDays, type LucideIcon } from 'lucide-react'
 import { Avatar, Badge } from '@/components/ui'
 import { useRole } from '@/contexts/RoleContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLogout } from '@/hooks/auth/useLogout'
 
-const studentNav = [
+type NavItem = { id: string; label: string; icon: LucideIcon; href: string; soon?: boolean }
+type NavGroup = { group: string; items: NavItem[] }
+
+const studentNav: NavGroup[] = [
   { group: 'Learn', items: [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
     { id: 'courses', label: 'My Courses', icon: BookOpen, href: '/courses' },
@@ -19,7 +22,7 @@ const studentNav = [
   ]},
 ]
 
-const teacherNav = [
+const teacherNav: NavGroup[] = [
   { group: 'Teach', items: [
     { id: 't-dashboard', label: 'Dashboard', icon: Home, href: '/teacher' },
     { id: 'roster', label: 'Students', icon: Users, href: '/teacher/students' },
@@ -37,13 +40,22 @@ const teacherNav = [
   ]},
 ]
 
+const adminNav: NavGroup[] = [
+  { group: 'Administration', items: [
+    { id: 'admin-users', label: 'Users', icon: Users, href: '/admin/users' },
+  ]},
+  { group: 'Account', items: [
+    { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+  ]},
+]
+
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { isTeacher } = useRole()
+  const { isTeacher, isAdmin } = useRole()
   const { user } = useAuth()
   const logout = useLogout()
-  const nav = isTeacher ? teacherNav : studentNav
+  const nav = isAdmin ? adminNav : isTeacher ? teacherNav : studentNav
 
   return (
     <aside className="sidebar">
