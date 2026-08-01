@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Avatar, Badge, ArrowRight, Calendar, Plus, Flag, Clock } from '@/components/ui'
+import { Avatar, Badge, ArrowRight, Calendar, Plus, Flag, Clock, Skeleton, SkeletonRows } from '@/components/ui'
 import { Pencil, Users, Video } from 'lucide-react'
 import { InviteStudentModal } from '@/components/teacher/InviteStudentModal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -93,7 +93,7 @@ export default function TeacherDashboardPage() {
           <div className="crumbs">{today}</div>
           <h1 className="h1">Welcome back, <span className="serif-italic">{firstName}</span>.</h1>
         </div>
-        <div className="row" style={{ gap: 8 }}>
+        <div className="page-head-actions row" style={{ gap: 8 }}>
           <button className="btn btn-secondary" onClick={() => router.push('/teacher/quizzes/new')}>
             <Pencil size={13} /> New quiz
           </button>
@@ -109,12 +109,18 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
-      {isLoading && <div className="muted" style={{ marginBottom: 24 }}>Loading dashboard…</div>}
       {isError && <div className="muted" style={{ marginBottom: 24 }}>Could not load dashboard data.</div>}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-        {statCards.map((s, i) => (
+      <div className="g g-4" style={{ marginBottom: 32 }}>
+        {isLoading && Array.from({ length: 4 }, (_, i) => (
+          <div key={`stat-${i}`} className="card card-pad-lg" aria-busy="true">
+            <Skeleton w={96} h={11} style={{ marginBottom: 14 }} />
+            <Skeleton w={64} h={34} style={{ marginBottom: 10 }} />
+            <Skeleton w="70%" h={11} />
+          </div>
+        ))}
+        {!isLoading && statCards.map((s, i) => (
           <div
             key={i}
             className="card card-pad-lg"
@@ -137,7 +143,7 @@ export default function TeacherDashboardPage() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24 }}>
+      <div className="g g-lg g-split">
         {/* Grading queue preview */}
         <div>
           <div className="between" style={{ marginBottom: 16 }}>
@@ -147,6 +153,11 @@ export default function TeacherDashboardPage() {
             </button>
           </div>
           <div className="card" style={{ padding: 0 }}>
+            {isLoading && (
+              <div className="card-pad">
+                <SkeletonRows count={4} avatar action />
+              </div>
+            )}
             {queue.length === 0 && !isLoading && (
               <div className="card-pad muted" style={{ fontSize: 13 }}>No submissions awaiting grading.</div>
             )}

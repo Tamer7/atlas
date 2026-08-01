@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { MessageSquareText } from 'lucide-react'
-import { Avatar, Badge, Progress, SegControl } from '@/components/ui'
+import { Avatar, Badge, Progress, SegControl, SkeletonTable } from '@/components/ui'
 import { useTeacherStudents } from '@/hooks/teacher/useStudents'
 import { InviteStudentModal } from '@/components/teacher/InviteStudentModal'
 import { StudentCommentsModal } from '@/components/teacher/StudentCommentsModal'
@@ -51,15 +51,15 @@ export default function TeacherRosterPage() {
             </span>
           </h1>
         </div>
-        <div className="row" style={{ gap: 8 }}>
+        <div className="page-head-actions row" style={{ gap: 8 }}>
           <button className="btn btn-brand" onClick={() => setShowInvite(true)}>
             Invite student
           </button>
         </div>
       </div>
 
-      <div className="row" style={{ marginBottom: 20, gap: 12 }}>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
+      <div className="row roster-filters" style={{ marginBottom: 20, gap: 12 }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: 360, minWidth: 180 }}>
           <input
             className="input"
             placeholder="Search students…"
@@ -67,10 +67,16 @@ export default function TeacherRosterPage() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <SegControl options={FILTERS} value={filter} onChange={setFilter} />
+        <div className="scroll-x">
+          <SegControl options={FILTERS} value={filter} onChange={setFilter} />
+        </div>
       </div>
 
-      {isLoading && <div className="muted">Loading roster…</div>}
+      {isLoading && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <SkeletonTable rows={6} cols={6} />
+        </div>
+      )}
 
       {isError && (
         <div className="card card-pad" style={{ color: 'var(--danger)' }}>
@@ -80,6 +86,7 @@ export default function TeacherRosterPage() {
 
       {!isLoading && !isError && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -137,6 +144,7 @@ export default function TeacherRosterPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Field } from '@/components/ui'
+import { Field, SkeletonForm } from '@/components/ui'
 import { useCourse } from '@/hooks/courses/useCourses'
 import { useCreateLesson, useUploadLessonVideo } from '@/hooks/curriculum/useLesson'
 import { getYouTubeId } from '@/lib/video'
@@ -18,7 +18,7 @@ export default function NewLessonPage({ params }: { params: Promise<{ id: string
   const goToCourse = () => router.push(`/courses/${id}`)
 
   if (isLoading) {
-    return <div className="muted" style={{ padding: 32 }}>Loading course…</div>
+    return <SkeletonForm fields={5} />
   }
 
   if (isError || !course) {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
-import { Avatar, Field } from '@/components/ui'
+import { Avatar, Field, SkeletonRows } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   useStudentComments,
@@ -63,7 +63,7 @@ export function StudentCommentsModal({ studentId, studentName, onClose }: Studen
       />
       <div
         className="card card-pad-lg"
-        style={{ position: 'relative', width: 540, zIndex: 1, maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ position: 'relative', width: 540, maxWidth: 'calc(100vw - 32px)', zIndex: 1, maxHeight: '90dvh', overflowY: 'auto' }}
       >
         <h2 className="h2" style={{ marginBottom: 6 }}>Comments · {studentName}</h2>
         <p className="muted" style={{ fontSize: 13, marginBottom: 20 }}>
@@ -95,7 +95,7 @@ export function StudentCommentsModal({ studentId, studentName, onClose }: Studen
         </form>
 
         {isLoading ? (
-          <div className="muted" style={{ fontSize: 13 }}>Loading comments…</div>
+          <SkeletonRows count={3} avatar />
         ) : comments.length === 0 ? (
           <div className="card card-pad muted" style={{ fontSize: 13 }}>
             No comments about this student yet.

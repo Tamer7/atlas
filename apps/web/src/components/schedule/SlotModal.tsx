@@ -102,7 +102,7 @@ export function SlotModal({ courses, initialRange, slot, onClose }: SlotModalPro
       <form
         onSubmit={handleSubmit}
         className="card card-pad-lg"
-        style={{ position: 'relative', width: 460, zIndex: 1 }}
+        style={{ position: 'relative', width: 460, maxWidth: 'calc(100vw - 32px)', maxHeight: '90dvh', overflowY: 'auto', zIndex: 1 }}
       >
         <h2 className="h2" style={{ marginBottom: 20 }}>
           {isEdit ? 'Edit class time' : 'Add class time'}
@@ -124,7 +124,7 @@ export function SlotModal({ courses, initialRange, slot, onClose }: SlotModalPro
           </Field>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 12 }}>
+        <div className="g g-sm g-3">
           <Field label="Day">
             <select
               className="select"

@@ -32,202 +32,170 @@ export function LoginForm() {
       ?.data?.message || (sendMagicLink.error as Error)?.message;
 
   return (
-    <div className="flex items-center justify-center p-12 bg-paper min-h-screen">
-      <div className="w-full max-w-[420px]">
-        {/* Brand mark */}
-        <div className="flex items-center gap-2.5 mb-10">
-          <div
-            className="w-7 h-7 flex items-center justify-center text-white font-bold text-sm"
-            style={{ background: 'var(--ink)', borderRadius: 'var(--r-sm)' }}
+    <div className="login-card">
+      <div className="login-brand">
+        <div className="logo">A</div>
+        <div className="name">Atlas</div>
+      </div>
+
+      <h1 className="login-heading">Sign in</h1>
+
+      <div
+        className="role-switch"
+        style={{ marginBottom: 18, background: 'var(--paper-2)', borderColor: 'transparent' }}
+      >
+        {(['link', 'password'] as Mode[]).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            className={mode === m ? 'active' : ''}
           >
-            A
-          </div>
-          <span className="font-semibold text-ink text-lg tracking-tight">Atlas</span>
-        </div>
+            {m === 'link' ? 'Magic link' : 'Password'}
+          </button>
+        ))}
+      </div>
 
-        <h1
-          className="text-ink font-semibold mb-2"
-          style={{ fontSize: 38, letterSpacing: '-0.025em' }}
-        >
-          Welcome back.
-        </h1>
-        <p className="text-muted mb-7 leading-relaxed" style={{ fontSize: 15, maxWidth: 360 }}>
-          Sign in to continue your learning. Choose{' '}
-          <strong className="text-ink">magic link</strong> for a passwordless flow,
-          or use your password.
-        </p>
-
-        {/* Mode toggle */}
+      {linkSent ? (
         <div
-          className="grid grid-cols-2 gap-1.5 p-1 mb-6"
-          style={{ background: 'var(--paper-2)', borderRadius: 'var(--r-md)' }}
+          className="card-pad"
+          style={{
+            background: 'var(--success-tint)',
+            border: '1px solid #B5DBC0',
+            borderRadius: 'var(--r-md)',
+          }}
         >
-          {(['link', 'password'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className="py-2.5 px-3 text-[13px] font-semibold transition-all duration-150"
-              style={{
-                background: mode === m ? 'var(--card)' : 'transparent',
-                boxShadow: mode === m ? 'var(--sh-sm)' : 'none',
-                color: mode === m ? 'var(--ink)' : 'var(--muted)',
-                borderRadius: 'var(--r-sm)',
-                border: 0,
-                cursor: 'pointer',
-              }}
-            >
-              {m === 'link' ? '✦ Magic link' : '🔒 Password'}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        {linkSent ? (
-          <div
-            className="p-5 mb-4"
+          <p style={{ fontWeight: 600, color: 'var(--success)', margin: '0 0 4px' }}>
+            Check your inbox
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--ink-2)', margin: 0 }}>
+            We sent a sign-in link to <strong>{email}</strong>. It expires in 15 minutes.
+          </p>
+          <button
+            type="button"
+            onClick={() => setLinkSent(false)}
             style={{
-              background: 'var(--success-tint)',
-              border: '1px solid #B5DBC0',
-              borderRadius: 'var(--r-md)',
+              marginTop: 12,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--brand)',
+              background: 'none',
+              border: 0,
+              cursor: 'pointer',
+              padding: 0,
             }}
           >
-            <p className="font-semibold mb-1" style={{ color: 'var(--success)' }}>
-              Check your inbox
-            </p>
-            <p className="text-sm text-ink-2">
-              We sent a sign-in link to <strong>{email}</strong>. It expires in 15 minutes.
-            </p>
-            <button
-              type="button"
-              className="mt-3 text-sm font-semibold"
-              style={{ color: 'var(--brand)', background: 'none', border: 0, cursor: 'pointer', padding: 0 }}
-              onClick={() => setLinkSent(false)}
-            >
-              Use a different email →
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
-                required
-                className="w-full h-11 px-3.5 text-sm text-ink placeholder:text-faint transition-colors"
-                style={{
-                  background: 'var(--card)',
-                  border: '1px solid var(--line-2)',
-                  borderRadius: 'var(--r-md)',
-                  outline: 'none',
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--brand)')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--line-2)')}
-              />
-              {mode === 'link' && (
-                <p className="mt-1 text-xs text-muted">We'll email you a sign-in link</p>
-              )}
-            </div>
-
-            {mode === 'password' && (
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full h-11 px-3.5 pr-10 text-sm text-ink placeholder:text-faint transition-colors"
-                    style={{
-                      background: 'var(--card)',
-                      border: '1px solid var(--line-2)',
-                      borderRadius: 'var(--r-md)',
-                      outline: 'none',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--brand)')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--line-2)')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink-2 text-base"
-                    style={{ background: 'none', border: 0, cursor: 'pointer' }}
-                  >
-                    {showPassword ? '🙈' : '👁'}
-                  </button>
-                </div>
-                <div className="text-right mt-1.5">
-                  <a href="#" className="text-xs font-semibold" style={{ color: 'var(--brand)' }}>
-                    Forgot password?
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <p className="text-sm" style={{ color: 'var(--danger)' }}>
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full h-11 flex items-center justify-center gap-2 font-semibold text-sm text-white transition-all active:translate-y-px disabled:opacity-60"
-              style={{
-                background: 'var(--ink)',
-                borderRadius: 'var(--r-md)',
-                border: 0,
-                cursor: isPending ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={(e) => !isPending && (e.currentTarget.style.background = 'var(--ink-2)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--ink)')}
-            >
-              {isPending ? (
-                <Spinner size={16} />
-              ) : mode === 'link' ? (
-                'Send sign-in link'
-              ) : (
-                'Sign in'
-              )}
-            </button>
-          </form>
-        )}
-
-        {/* OR divider */}
-        <div
-          className="flex items-center gap-2.5 my-7 text-[11px] font-semibold tracking-[0.12em]"
-          style={{ color: 'var(--faint)' }}
-        >
-          <div className="flex-1 h-px" style={{ background: 'var(--line)' }} />
-          OR
-          <div className="flex-1 h-px" style={{ background: 'var(--line)' }} />
+            Use a different email →
+          </button>
         </div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 14 }}>
+            <label className="label" htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              type="email"
+              className="input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@email.com"
+              autoComplete="email"
+              required
+            />
+            {mode === 'link' && (
+              <p className="help">We&apos;ll email you a sign-in link</p>
+            )}
+          </div>
 
-        {/* Google */}
-        <button
-          type="button"
-          className="w-full h-11 flex items-center justify-center gap-2.5 text-sm font-medium text-ink transition-colors"
-          style={{
-            border: '1px solid var(--line-2)',
-            borderRadius: 'var(--r-md)',
-            background: 'var(--card)',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--paper-2)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--card)')}
-        >
-          <GoogleIcon />
-          Continue with Google
-        </button>
+          {mode === 'password' && (
+            <div style={{ marginBottom: 14 }}>
+              <label className="label" htmlFor="login-password">Password</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="input"
+                  style={{ paddingRight: 44 }}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{
+                    position: 'absolute',
+                    right: 4,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 34,
+                    height: 34,
+                    display: 'grid',
+                    placeItems: 'center',
+                    background: 'none',
+                    border: 0,
+                    cursor: 'pointer',
+                    color: 'var(--muted)',
+                  }}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+              <div style={{ textAlign: 'right', marginTop: 6 }}>
+                <a href="#" style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand)' }}>
+                  Forgot password?
+                </a>
+              </div>
+            </div>
+          )}
 
-      </div>
+          {error && (
+            <p style={{ fontSize: 13, color: 'var(--danger)', margin: '0 0 12px' }} role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={isPending}
+            className="btn btn-primary btn-lg btn-block"
+            style={{ opacity: isPending ? 0.65 : 1 }}
+          >
+            {isPending && <Spinner size={16} />}
+            {mode === 'link' ? 'Send sign-in link' : 'Sign in'}
+          </button>
+        </form>
+      )}
+
+      <div className="login-divider">OR</div>
+
+      <button type="button" className="btn btn-secondary btn-lg btn-block">
+        <GoogleIcon />
+        Continue with Google
+      </button>
     </div>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.7 5.1A9.9 9.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3 4M6.1 6.1A17.4 17.4 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 5.1-1.4" />
+      <path d="m2 2 20 20" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </svg>
   );
 }
 

@@ -19,6 +19,12 @@ class LiveClassController extends Controller
 
     public function index(string $courseId): JsonResponse
     {
+        try {
+            $this->liveService->assertCanAccessCourse($courseId, request()->user());
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
+
         $this->liveService->materialiseUpcomingForCourse($courseId);
 
         $classes = $this->repo->listForCourse($courseId);

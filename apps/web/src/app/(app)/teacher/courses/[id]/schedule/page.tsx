@@ -157,7 +157,7 @@ export default function ScheduleManagerPage({ params }: { params: Promise<{ id: 
           <div className="eyebrow" style={{ marginBottom: 12 }}>
             {editingId ? 'Edit slot' : 'Add slot'}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 12 }}>
+          <div className="g g-sm g-3">
             <Field label="Day">
               <select
                 className="select"

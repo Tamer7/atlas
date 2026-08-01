@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
+import { Skeleton } from '@/components/ui'
 import { useCourses } from '@/hooks/courses/useCourses'
 import { useStudentLiveClasses, useTeacherLiveClasses } from '@/hooks/live/useLiveClasses'
 import { useMySchedule, useUpdateScheduleSlot } from '@/hooks/schedule/useSchedule'
@@ -72,9 +73,11 @@ export default function SchedulePage() {
           </div>
         </div>
         {isTeacher && (
-          <button className="btn btn-brand" onClick={() => setShowCreate(true)}>
-            <Plus size={14} /> Add class time
-          </button>
+          <div className="page-head-actions">
+            <button className="btn btn-brand" onClick={() => setShowCreate(true)}>
+              <Plus size={14} /> Add class time
+            </button>
+          </div>
         )}
       </div>
 
@@ -106,7 +109,9 @@ export default function SchedulePage() {
       )}
 
       {isLoading ? (
-        <div className="muted" style={{ padding: 32 }}>Loading schedule…</div>
+        <div className="card" style={{ padding: 16 }} aria-busy="true" aria-label="Loading schedule">
+          <ScheduleSkeleton />
+        </div>
       ) : slots.length === 0 && !isTeacher ? (
         <div className="card card-pad-lg muted" style={{ fontSize: 14 }}>
           No class times scheduled yet. They will appear here once your teachers set them.
@@ -144,6 +149,28 @@ export default function SchedulePage() {
           onClose={() => setEditSlot(null)}
         />
       )}
+    </div>
+  )
+}
+
+/** Mirrors the WeeklyCalendar grid so the page keeps its shape while loading. */
+function ScheduleSkeleton() {
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '48px repeat(7, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
+        <span />
+        {Array.from({ length: 7 }, (_, i) => (
+          <Skeleton key={i} h={11} w="60%" style={{ margin: '0 auto' }} />
+        ))}
+      </div>
+      {Array.from({ length: 8 }, (_, row) => (
+        <div key={row} style={{ display: 'grid', gridTemplateColumns: '48px repeat(7, minmax(0, 1fr))', gap: 8, marginBottom: 8 }}>
+          <Skeleton h={11} w={34} />
+          {Array.from({ length: 7 }, (_, col) => (
+            <Skeleton key={col} h={34} r="var(--r-sm)" style={{ opacity: (row * 7 + col) % 3 === 0 ? 1 : 0.35 }} />
+          ))}
+        </div>
+      ))}
     </div>
   )
 }

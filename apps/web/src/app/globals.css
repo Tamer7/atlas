@@ -98,10 +98,200 @@ body {
 button { font-family: inherit; }
 input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
 
-/* ============ Utilities ============ */
-.app { display: grid; grid-template-columns: 248px 1fr; height: 100vh; min-height: 600px; }
-.main { overflow: auto; }
-.main-inner { padding: 32px 48px 64px; max-width: 1360px; }
+/* ============ App shell ============
+   Desktop: fixed sidebar + independently scrolling main.
+   Mobile (<=960px): sidebar becomes an off-canvas drawer, document scrolls.
+   Content is LEFT-ANCHORED (no `margin: 0 auto`) so the gap between the menu
+   and the content stays constant no matter how wide the monitor is.
+   ==================================== */
+.app-shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  height: 100dvh;
+}
+.app-main {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+  background: var(--paper);
+}
+.app-inner {
+  padding: 32px 32px 64px;
+  max-width: 1344px; /* 1280 of content + 2x32 gutter */
+}
+
+/* Mobile top bar — only rendered visible below the drawer breakpoint */
+.app-topbar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 12px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.app-topbar-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.app-topbar-btn:hover { background: var(--paper-2); }
+.app-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.app-topbar-brand .logo {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: var(--ink); color: var(--paper);
+  display: grid; place-items: center;
+  font-size: 15px; font-weight: 700;
+}
+
+/* Drawer scrim */
+.app-scrim { display: none; }
+
+/* Legacy aliases from the design handoff */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); height: 100dvh; }
+.main { overflow: auto; min-width: 0; }
+.main-inner { padding: 32px 32px 64px; max-width: 1344px; }
+
+/* ============ Responsive grid utilities ============
+   Page grids live here instead of inline `style` props, because inline styles
+   cannot carry media queries — that was the reason nothing reflowed on mobile.
+   ==================================================== */
+.g { display: grid; gap: 20px; }
+.g-sm { gap: 12px; }
+.g-lg { gap: 24px; }
+
+/* Auto-fitting card grids: no breakpoints needed, they just work. */
+.g-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.g-cards-sm { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.g-cards-lg { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+
+/* Explicit column counts that collapse on small screens. */
+.g-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Asymmetric content/aside splits. */
+.g-split { grid-template-columns: 1.5fr minmax(0, 1fr); align-items: start; }
+.g-split-even { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.g-aside { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+.g-aside-wide { grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
+
+/* ============ Dashboard hero ============ */
+.dash-hero { display: grid; grid-template-columns: 1.1fr minmax(0, 1fr); }
+.dash-hero-body { padding: 32px; min-width: 0; }
+.dash-hero-art { min-height: 260px; overflow: hidden; }
+.dash-hero-glyph {
+  position: absolute; top: -40px; right: -40px;
+  font-family: var(--font-display); font-size: 280px; line-height: 1;
+  color: rgba(255, 255, 255, 0.15); user-select: none; pointer-events: none;
+}
+
+@media (max-width: 960px) {
+  .dash-hero { grid-template-columns: minmax(0, 1fr); }
+  .dash-hero-body { padding: 22px; }
+  .dash-hero-art { min-height: 150px; order: -1; }
+  .dash-hero-glyph { font-size: 170px; top: -28px; right: -20px; }
+}
+
+/* ============ Settings ============ */
+.settings-shell { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; }
+.settings-tabs { display: flex; flex-direction: column; gap: 2px; }
+
+@media (max-width: 960px) {
+  .settings-shell { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .settings-tabs {
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .settings-tabs::-webkit-scrollbar { display: none; }
+  .settings-tabs > button { white-space: nowrap; flex-shrink: 0; }
+}
+
+/* Row of summary stats that wraps rather than compressing each figure */
+.stat-row { display: flex; flex-wrap: wrap; gap: 32px; }
+@media (max-width: 640px) {
+  .stat-row { gap: 20px; }
+  .stat-row > * { flex: 1 1 130px; }
+}
+
+/* ============ Grading (master/detail) ============ */
+.grading-shell {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: calc(100dvh - 80px);
+}
+.grading-queue {
+  border-right: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  height: calc(100dvh - 80px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  /* Master/detail cannot coexist on a phone — the queue becomes a scrollable
+     strip above the submission being graded. */
+  .grading-shell { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .grading-queue {
+    position: static;
+    height: auto;
+    max-height: 40vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* ============ Skeletons ============ */
+@keyframes sk-shimmer { 100% { transform: translateX(100%); } }
+.sk {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: 12px; /* default lives here so shape classes below can override it */
+  background: var(--paper-2);
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+.sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: sk-shimmer 1.5s infinite;
+}
+.sk-text { height: 12px; border-radius: var(--r-xs); }
+.sk-title { height: 22px; border-radius: var(--r-xs); }
+.sk-thumb { aspect-ratio: 16 / 9; border-radius: var(--r-md); width: 100%; height: auto; }
+.sk-circle { border-radius: 50%; }
+.sk-on-dark { background: rgba(255, 255, 255, 0.08); }
+.sk-on-dark::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent); }
 
 .row { display: flex; align-items: center; gap: 12px; }
 .col { display: flex; flex-direction: column; gap: 12px; }
@@ -235,6 +425,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: inher
   padding: 18px 14px;
   display: flex; flex-direction: column;
   gap: 18px;
+  overflow-y: auto; /* teacher nav is long enough to overflow a short window */
 }
 .brand-mark { display: flex; align-items: center; gap: 10px; padding: 6px 10px; }
 .brand-mark .logo { width: 28px; height: 28px; border-radius: 8px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
@@ -264,7 +455,9 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: inher
   color: var(--ink-2);
   cursor: pointer; user-select: none;
   border: 0; background: transparent; text-align: left; width: 100%;
+  text-decoration: none;
 }
+.nav-item:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 .nav-item:hover { background: rgba(20, 19, 15, 0.04); }
 .nav-item.active { background: var(--card); color: var(--ink); box-shadow: var(--sh-sm); }
 .nav-item .nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
@@ -341,11 +534,51 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: inher
 ::-webkit-scrollbar-thumb:hover { background: var(--faint); }
 ::-webkit-scrollbar-track { background: transparent; }
 
-/* Login layout */
-.login-shell { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; background: var(--paper); }
-.login-left { display: flex; align-items: center; justify-content: center; padding: 48px; }
-.login-card { width: 100%; max-width: 420px; }
-.login-right { background: linear-gradient(150deg, var(--brand) 0%, var(--brand-2) 60%, #0E2278 100%); color: #fff; padding: 56px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; }
+/* Login layout — single centered column */
+.login-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 32px 20px;
+  background: var(--paper);
+}
+.login-card { width: 100%; max-width: 380px; }
+.login-brand {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-bottom: 28px;
+}
+.login-brand .logo {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--ink); color: var(--paper);
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: -0.02em;
+}
+.login-brand .name {
+  font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.03em;
+}
+.login-heading {
+  font-size: 20px; font-weight: 600; letter-spacing: -0.015em;
+  text-align: center; margin: 0 0 22px;
+}
+.login-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 22px 0;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  color: var(--faint);
+}
+.login-divider::before,
+.login-divider::after {
+  content: ""; flex: 1; height: 1px; background: var(--line);
+}
+.login-foot {
+  margin-top: 24px; text-align: center;
+  font-size: 12px; color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .login-shell { padding: 24px 16px; align-items: flex-start; padding-top: 48px; }
+}
 
 /* Video player */
 .video-stage { background: #0B0A07; border-radius: var(--r-lg); aspect-ratio: 16 / 9; position: relative; overflow: hidden; color: #fff; }
@@ -569,4 +802,193 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: inher
 .atlas-cal-event-title {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ============================================================
+   RESPONSIVE
+   Breakpoints: 1200 (dense desktop) / 960 (drawer + stack) / 640 (phone)
+   ============================================================ */
+
+/* ---- <= 1200px : loosen the widest grids first ---- */
+@media (max-width: 1200px) {
+  .g-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g-aside,
+  .g-aside-wide { grid-template-columns: minmax(0, 1fr) 300px; }
+  .app-inner { padding: 28px 24px 56px; }
+  .q-types { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---- <= 960px : sidebar becomes a drawer, everything single-column ---- */
+@media (max-width: 960px) {
+  .app-shell,
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 100dvh; }
+  .app-main,
+  .main { overflow: visible; }
+  .app-inner,
+  .main-inner { padding: 20px 16px 64px; max-width: none; }
+
+  .app-topbar { display: flex; }
+
+  /* Off-canvas drawer */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 276px;
+    max-width: 84vw;
+    z-index: 60;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    box-shadow: var(--sh-lg);
+    border-right: 1px solid var(--line);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .app-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: var(--overlay);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+  }
+  .app-scrim.open { opacity: 1; pointer-events: auto; }
+
+  /* Stack every multi-column grid */
+  .g-2, .g-3, .g-4,
+  .g-split, .g-split-even,
+  .g-aside, .g-aside-wide { grid-template-columns: minmax(0, 1fr); }
+
+  .g-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .g-cards-lg { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+
+  /* Page header stacks and left-aligns */
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .page-head .page-head-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .h1 { font-size: 28px; }
+  .h2 { font-size: 22px; }
+  .h3 { font-size: 16px; }
+
+  .card-pad-lg { padding: 20px; }
+
+  /* Tabs and seg controls scroll instead of squashing */
+  .tabs,
+  .scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar,
+  .scroll-x::-webkit-scrollbar { display: none; }
+  .tabs button { white-space: nowrap; flex-shrink: 0; }
+
+  /* Tables get a horizontal scroll container rather than overflowing the page */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table { min-width: 640px; }
+
+  /* iOS zooms the viewport when a focused input is under 16px */
+  .input, .select, .textarea { font-size: 16px; height: 42px; }
+  .textarea { height: auto; }
+  .input-lg { height: 46px; }
+
+  /* List rows whose trailing controls would otherwise squash the label.
+     `stack-row-main` marks the element that should claim the first line and
+     push the trailing badges/buttons onto the next one. */
+  .stack-row { flex-wrap: wrap; gap: 10px; }
+  .stack-row > .stack-row-main { flex: 1 1 100%; min-width: 0; }
+
+  .roster-filters { flex-wrap: wrap; }
+  .admin-filters { flex-wrap: wrap; }
+  .admin-filters > * { flex: 1 1 160px; }
+
+  /* Comfortable tap targets */
+  .btn { height: 40px; padding: 0 16px; }
+  .btn-sm { height: 32px; padding: 0 12px; }
+  .btn-lg { height: 46px; }
+  .btn-icon { width: 40px; padding: 0; }
+  .nav-item { padding: 11px 12px; font-size: 14px; }
+}
+
+/* ---- <= 640px : phone ---- */
+@media (max-width: 640px) {
+  .app-inner,
+  .main-inner { padding: 16px 14px 56px; }
+
+  .g, .g-lg { gap: 14px; }
+  .g-cards,
+  .g-cards-sm,
+  .g-cards-lg { grid-template-columns: minmax(0, 1fr); }
+
+  .h1 { font-size: 24px; }
+  .h2 { font-size: 19px; }
+
+  .card-pad { padding: 16px; }
+  .card-pad-lg { padding: 16px; }
+
+  .btn-block-sm { display: flex; width: 100%; }
+
+  /* The exam banner packs a timer, title and two buttons into one row */
+  .exam-banner { flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+  .exam-banner > :nth-child(3) { flex-basis: 100%; order: -1; }
+  .exam-timer { font-size: 19px; }
+
+  /* Live classroom controls wrap on narrow screens */
+  .lr { grid-template-rows: 52px 1fr auto; }
+  .lr-controls { flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
+  .lr-ctrl { min-width: 52px; }
+  .lr-ctrl .ic { width: 40px; height: 40px; }
+  .lr-leave { height: 40px; padding: 0 16px; margin-left: 0; }
+  .lr-grid { grid-template-columns: repeat(2, 1fr); padding: 10px; gap: 8px; }
+  .lr-strip { height: 78px; }
+  .lr-stage { padding: 10px; gap: 10px; }
+}
+
+/* A 7-day time grid cannot compress to phone width without becoming unreadable,
+   so let the week scroll horizontally instead of squashing the columns. */
+@media (max-width: 860px) {
+  .atlas-calendar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .atlas-calendar .fc { min-width: 640px; }
+  .atlas-calendar .fc-timegrid-slot { height: 3em; }
+}
+
+/* The live-classroom side panel overlays instead of splitting the stage */
+@media (max-width: 860px) {
+  .lr-body.with-panel { grid-template-columns: minmax(0, 1fr); }
+  .lr-panel {
+    position: fixed;
+    top: 56px; right: 0; bottom: 0;
+    width: min(340px, 88vw);
+    z-index: 70;
+    box-shadow: var(--sh-pop);
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .sk::after { animation: none; }
+  .sidebar,
+  .app-scrim { transition: none; }
+  .lr-live-pill::before,
+  .lr-rec .rec-dot,
+  .live-pill-sm::before,
+  .lr-tile-hand { animation: none; }
 }

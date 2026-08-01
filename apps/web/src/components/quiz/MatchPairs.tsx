@@ -19,7 +19,7 @@ export function MatchPairs({
   )
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+    <div className="g g-2" style={{ gap: 14 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {pairs.map((p, i) => (
           <div

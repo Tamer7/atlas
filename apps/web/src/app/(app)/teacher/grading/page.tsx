@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Avatar, Badge, Button, Field, Sparkle, Check, X, ArrowLeft, ArrowRight, ChevronDown } from '@/components/ui'
+import { Avatar, Badge, Button, Field, Sparkle, Check, X, ArrowLeft, ArrowRight, ChevronDown, Skeleton, SkeletonRows } from '@/components/ui'
 import { useGradingQueue, useGradeAnswer, useCompleteGrading } from '@/hooks/assessment/useGrading'
 import { useAttempt } from '@/hooks/assessment/useAttempt'
 import { avatarColor, formatRelativeTime, formatStudentAnswer } from '@/lib/quiz/helpers'
@@ -159,7 +159,36 @@ export default function GradingQueuePage() {
   }
 
   if (isLoading) {
-    return <div className="muted card-pad">Loading grading queue…</div>
+    return (
+      <div className="grading-shell" aria-busy="true" aria-label="Loading grading queue">
+        <div className="grading-queue">
+          <div style={{ padding: '16px 16px 10px', borderBottom: '1px solid var(--line)' }}>
+            <Skeleton w={160} h={20} style={{ marginBottom: 8 }} />
+            <Skeleton w={100} h={11} />
+          </div>
+          <div style={{ padding: 16 }}>
+            <SkeletonRows count={6} avatar />
+          </div>
+        </div>
+        <div style={{ padding: 24 }}>
+          <Skeleton w={260} h={24} style={{ marginBottom: 22 }} />
+          <div className="g g-sm g-4" style={{ marginBottom: 28 }}>
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="card card-pad">
+                <Skeleton w={80} h={10} style={{ marginBottom: 10 }} />
+                <Skeleton w={58} h={22} />
+              </div>
+            ))}
+          </div>
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="card card-pad" style={{ marginBottom: 14 }}>
+              <Skeleton w="70%" h={14} style={{ marginBottom: 12 }} />
+              <Skeleton h={60} r="var(--r-md)" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (isError) {
@@ -167,14 +196,9 @@ export default function GradingQueuePage() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 0, minHeight: 'calc(100vh - 80px)' }}>
+    <div className="grading-shell">
       {/* Left sidebar — queue */}
-      <div style={{
-        borderRight: '1px solid var(--line)',
-        position: 'sticky', top: 0, height: 'calc(100vh - 80px)',
-        overflowY: 'auto',
-        display: 'flex', flexDirection: 'column',
-      }}>
+      <div className="grading-queue">
         <div style={{ padding: '16px 16px 10px', borderBottom: '1px solid var(--line)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <button className="btn btn-ghost btn-sm" onClick={() => router.back()}>
@@ -250,7 +274,7 @@ export default function GradingQueuePage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
+          <div className="g g-sm g-4" style={{ marginBottom: 28 }}>
             {[
               { label: 'Auto-graded', value: `${autoScore}`, sub: 'objective questions' },
               { label: 'Manual', value: `${manualTotal}/${manualMaxTotal}`, sub: 'written questions' },

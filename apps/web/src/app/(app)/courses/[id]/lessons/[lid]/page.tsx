@@ -5,7 +5,7 @@ import {
   Flag, MoreH, Play, Pause, CC, Volume, Maximize,
   Check, Circle, ListChecks, ArrowLeft, ArrowRight,
   Send, FileText,
-  Tabs, Avatar, Badge,
+  Tabs, Avatar, Badge, Skeleton, SkeletonText,
 } from '@/components/ui'
 import { useCourse } from '@/hooks/courses/useCourses'
 import { useLesson, useDiscussion, useCreateDiscussionPost } from '@/hooks/curriculum/useLesson'
@@ -157,7 +157,7 @@ export default function LessonPage({
   const activeTab = tabs.some(item => item.id === tab) ? tab : (tabs[0]?.id ?? 'notes')
 
   if (isLoading) {
-    return <div className="muted" style={{ padding: 32 }}>Loading lesson…</div>
+    return <LessonSkeleton />
   }
 
   if (isError || !lesson) {
@@ -187,7 +187,7 @@ export default function LessonPage({
           </div>
           <h1 className="h2" style={{ maxWidth: 800 }}>{lesson.title}</h1>
         </div>
-        <div className="row">
+        <div className="page-head-actions row">
           {isCompleted && <Badge tone="success">Completed</Badge>}
           <button className="btn btn-secondary">
             <Flag size={14} /> Mark issue
@@ -198,7 +198,7 @@ export default function LessonPage({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+      <div className="g g-lg g-aside-wide">
         <div>
           {youTubeId ? (
             <div className="video-stage">
@@ -423,7 +423,7 @@ export default function LessonPage({
             )}
 
             {activeTab === 'attachments' && attachments.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="g g-sm g-2">
                 {attachments.map((f, i) => (
                   <div
                     key={i}
@@ -616,6 +616,42 @@ export default function LessonPage({
             )}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function LessonSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading lesson">
+      <div className="page-head">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Skeleton w={220} h={11} />
+          <Skeleton w={340} h={26} />
+        </div>
+      </div>
+      <div className="g g-lg g-aside-wide">
+        <div>
+          <Skeleton className="sk-thumb" r="var(--r-lg)" />
+          <div className="tabs" style={{ gap: 18, padding: '18px 2px 10px' }}>
+            {[58, 72, 66].map(w => <Skeleton key={w} w={w} h={13} />)}
+          </div>
+          <div style={{ paddingTop: 12 }}>
+            <SkeletonText lines={5} />
+          </div>
+        </div>
+        <div className="card card-pad">
+          <Skeleton w={110} h={11} style={{ marginBottom: 16 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Skeleton w={22} h={11} />
+                <Skeleton w={`${52 + (i * 11) % 32}%`} h={12} />
+                <Skeleton w={34} h={10} style={{ marginLeft: 'auto' }} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

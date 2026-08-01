@@ -1,15 +1,27 @@
 'use client'
 import { use, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, CalendarDays, Check, Circle, Lock, Pencil, Play, Plus, ListChecks } from 'lucide-react'
-import { Badge, Progress, Tabs } from '@/components/ui'
+import { ArrowRight, CalendarDays, Check, Circle, Lock, Pencil, Play, Plus, ListChecks, Video } from 'lucide-react'
+import { Badge, Progress, Tabs, Skeleton, SkeletonPageHead } from '@/components/ui'
 import { useCourse } from '@/hooks/courses/useCourses'
 import { useQuizzes } from '@/hooks/assessment/useQuizzes'
 import { useCourseSchedule } from '@/hooks/schedule/useSchedule'
+import { useLiveClassesForCourse } from '@/hooks/live/useLiveClasses'
 import { useRole } from '@/contexts/RoleContext'
 import { AddModuleModal } from '@/components/teacher/AddModuleModal'
 import { dayName } from '@/types/schedule'
 import type { Lesson, LessonStatus } from '@/types/curriculum'
+import type { LiveClass } from '@/lib/api/live'
+
+type Recording = LiveClass & { recording_url: string }
+
+function isRecording(liveClass: LiveClass): liveClass is Recording {
+  return liveClass.status === 'ended' && !!liveClass.recording_url
+}
+
+function recordedAt(recording: Recording): number {
+  return new Date(recording.ended_at ?? recording.scheduled_at ?? 0).getTime()
+}
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`
@@ -37,11 +49,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const { data: course, isLoading, isError } = useCourse(id)
   const { data: quizzes = [] } = useQuizzes(id)
   const { data: schedule = [] } = useCourseSchedule(id)
+  const { data: liveClasses = [] } = useLiveClassesForCourse(id)
   const [tab, setTab] = useState('curriculum')
   const [showAddModule, setShowAddModule] = useState(false)
 
+  const recordings = liveClasses.filter(isRecording).sort((a, b) => recordedAt(b) - recordedAt(a))
+
   if (isLoading) {
-    return <div className="muted" style={{ padding: 32 }}>Loading course…</div>
+    return <CourseSkeleton />
   }
 
   if (isError || !course) {
@@ -65,6 +80,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     { id: 'curriculum', label: 'Curriculum' },
     { id: 'quizzes', label: 'Quizzes', count: quizzes.length },
     { id: 'schedule', label: 'Schedule', count: schedule.length },
+    ...(recordings.length > 0 ? [{ id: 'recordings', label: 'Recordings', count: recordings.length }] : []),
     ...(course.description ? [{ id: 'about', label: 'About' }] : []),
   ]
 
@@ -317,6 +333,43 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           </div>
         )}
 
+        {tab === 'recordings' && (
+          <div className="card" style={{ padding: 0 }}>
+            {recordings.map((recording, i) => (
+              <div
+                key={recording.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '14px 18px',
+                  borderBottom: i < recordings.length - 1 ? '1px solid var(--line)' : 0,
+                }}
+              >
+                <Video size={18} color="var(--brand)" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{recording.title}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    {new Date(recordedAt(recording)).toLocaleDateString('en', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </div>
+                <a
+                  href={recording.recording_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-secondary btn-sm"
+                >
+                  Watch recording
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+
         {tab === 'about' && course.description && (
           <div className="card card-pad-lg">
             <p style={{ fontSize: 15, lineHeight: 1.7, margin: 0 }}>{course.description}</p>
@@ -327,6 +380,37 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       {showAddModule && (
         <AddModuleModal courseId={id} onClose={() => setShowAddModule(false)} />
       )}
+    </div>
+  )
+}
+
+function CourseSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading course">
+      <SkeletonPageHead />
+      <div className="tabs" style={{ gap: 18, padding: '0 2px 10px' }}>
+        {[76, 66, 74, 58].map(w => <Skeleton key={w} w={w} h={13} />)}
+      </div>
+      <div style={{ paddingTop: 24, maxWidth: 860 }}>
+        {[0, 1].map(module => (
+          <div key={module} style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <Skeleton w={130} h={11} />
+              <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[0, 1, 2].map(row => (
+                <div key={row} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px' }}>
+                  <Skeleton w={20} h={11} />
+                  <Skeleton w={16} h={16} circle />
+                  <Skeleton w={`${45 + ((module * 3 + row) * 9) % 35}%`} h={13} />
+                  <Skeleton w={42} h={11} style={{ marginLeft: 'auto' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

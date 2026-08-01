@@ -1,7 +1,8 @@
 'use client'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { Home, BookOpen, Radio, Settings, Users, Pencil, LogOut, ClipboardCheck, TrendingUp, CircleUser, CalendarDays, type LucideIcon } from 'lucide-react'
-import { Avatar, Badge } from '@/components/ui'
+import { Avatar, Badge, Skeleton } from '@/components/ui'
 import { useRole } from '@/contexts/RoleContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLogout } from '@/hooks/auth/useLogout'
@@ -49,52 +50,72 @@ const adminNav: NavGroup[] = [
   ]},
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  id?: string
+  /** Drawer state — only has a visual effect below the 960px breakpoint. */
+  open?: boolean
+  onNavigate?: () => void
+}
+
+export function Sidebar({ id, open = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const { isTeacher, isAdmin } = useRole()
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const logout = useLogout()
   const nav = isAdmin ? adminNav : isTeacher ? teacherNav : studentNav
 
   return (
-    <aside className="sidebar">
+    <aside id={id} className={`sidebar${open ? ' open' : ''}`}>
       <div className="brand-mark">
         <div className="logo">A</div>
         <div className="name">Atlas</div>
       </div>
 
       {nav.map(grp => (
-        <div className="nav-section" key={grp.group}>
+        <nav className="nav-section" key={grp.group} aria-label={grp.group}>
           <div className="eyebrow">{grp.group}</div>
           {grp.items.map(it => {
             const Icon = it.icon
             const active = pathname === it.href || (it.href !== '/dashboard' && it.href !== '/teacher' && pathname.startsWith(it.href))
             return (
-              <button
+              <Link
                 key={it.id}
+                href={it.href}
                 className={`nav-item ${active ? 'active' : ''}`}
-                onClick={() => router.push(it.href)}>
+                aria-current={active ? 'page' : undefined}
+                onClick={onNavigate}>
                 <Icon className="nav-icon" size={16} />
                 <span>{it.label}</span>
                 {'soon' in it && it.soon && (
                   <Badge tone="accent" style={{ marginLeft: 'auto', fontSize: 10 }}>Soon</Badge>
                 )}
-              </button>
+              </Link>
             )
           })}
-        </div>
+        </nav>
       ))}
 
       <div className="sidebar-foot">
-        <Avatar name={user?.name ?? '??'} color={user?.color} />
-        <div className="who">
-          <b>{user?.name ?? '…'}</b>
-          <span>{isAdmin ? 'Administrator' : isTeacher ? 'Instructor' : 'Student'}</span>
-        </div>
-        <button className="btn btn-ghost btn-icon" title="Sign out" onClick={() => logout.mutate()}>
-          <LogOut size={14} />
-        </button>
+        {isLoading ? (
+          <>
+            <Skeleton w={32} h={32} circle />
+            <div className="who" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <Skeleton w="70%" h={11} />
+              <Skeleton w="45%" h={9} />
+            </div>
+          </>
+        ) : (
+          <>
+            <Avatar name={user?.name ?? '??'} color={user?.color} />
+            <div className="who">
+              <b>{user?.name ?? 'Signed out'}</b>
+              <span>{isAdmin ? 'Administrator' : isTeacher ? 'Instructor' : 'Student'}</span>
+            </div>
+            <button className="btn btn-ghost btn-icon" title="Sign out" onClick={() => logout.mutate()}>
+              <LogOut size={14} />
+            </button>
+          </>
+        )}
       </div>
     </aside>
   )

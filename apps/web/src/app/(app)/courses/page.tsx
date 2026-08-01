@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { Badge, Progress, SegControl, CourseThumb } from '@/components/ui'
+import { Badge, Progress, SegControl, CourseThumb, SkeletonCard } from '@/components/ui'
 import { useCourses } from '@/hooks/courses/useCourses'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -30,10 +30,12 @@ export default function CoursesPage() {
       <div className="page-head">
         <div>
           <div className="crumbs">Library</div>
-          <h1 className="h1">{isTeacher ? 'My Courses' : 'My Courses'}</h1>
+          <h1 className="h1">My Courses</h1>
         </div>
-        <div className="row" style={{ gap: 8 }}>
-          <SegControl options={FILTERS} value={filter} onChange={setFilter} />
+        <div className="page-head-actions row" style={{ gap: 8 }}>
+          <div className="scroll-x">
+            <SegControl options={FILTERS} value={filter} onChange={setFilter} />
+          </div>
           {isTeacher && (
             <Link href="/teacher/courses/new" className="btn btn-brand">
               <Plus size={14} /> New course
@@ -43,7 +45,9 @@ export default function CoursesPage() {
       </div>
 
       {isLoading && (
-        <div className="muted" style={{ padding: 32, textAlign: 'center' }}>Loading courses…</div>
+        <div className="g g-cards" aria-busy="true" aria-label="Loading courses">
+          {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
+        </div>
       )}
 
       {isError && (
@@ -60,7 +64,7 @@ export default function CoursesPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+      <div className="g g-cards">
         {items.map(c => (
           <button key={c.id} className="card" style={{ padding: 0, overflow: 'hidden', textAlign: 'left', cursor: 'pointer', background: 'var(--card)' }}
             onClick={() => router.push(`/courses/${c.id}`)}>

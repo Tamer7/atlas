@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, Broadcast, ArrowRight, X } from '@/components/ui'
+import { Calendar, Broadcast, ArrowRight, X, SkeletonRows } from '@/components/ui'
 import { Field } from '@/components/ui'
 import { statusBadge } from '@/components/live/liveUtils'
 import { ScheduleModal } from '@/components/live/ScheduleModal'
@@ -90,7 +90,7 @@ export default function TeacherLivePage() {
           <div className="crumbs">Teach</div>
           <h1 className="h1">Live Classes</h1>
         </div>
-        <div className="row">
+        <div className="page-head-actions row">
           <button className="btn btn-secondary" onClick={() => setScheduling(true)}>
             <Calendar size={14} /> Schedule
           </button>
@@ -100,7 +100,7 @@ export default function TeacherLivePage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div className="g g-4" style={{ marginBottom: 28 }}>
         {stats.map(s => (
           <div key={s.label} className="card card-pad-lg">
             <div className="eyebrow" style={{ marginBottom: 10 }}>{s.label}</div>
@@ -113,11 +113,11 @@ export default function TeacherLivePage() {
       </div>
 
       {liveNow && (
-        <div className="card elev" style={{ padding: 24, marginBottom: 28, display: 'flex', gap: 20, alignItems: 'center', borderColor: '#F3C6C0', background: 'var(--danger-tint)' }}>
+        <div className="card elev stack-row" style={{ padding: 24, marginBottom: 28, display: 'flex', gap: 20, alignItems: 'center', borderColor: '#F3C6C0', background: 'var(--danger-tint)' }}>
           <div style={{ width: 120, height: 76, borderRadius: 'var(--r-md)', background: 'var(--brand)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
             <Broadcast size={26} color="#fff" />
           </div>
-          <div style={{ flex: 1 }}>
+          <div className="stack-row-main" style={{ flex: 1 }}>
             <span className="live-pill-sm" style={{ marginBottom: 8 }}>LIVE NOW</span>
             <div style={{ fontWeight: 600, fontSize: 18, margin: '8px 0 4px' }}>{liveNow.title}</div>
             <div className="muted" style={{ fontSize: 13 }}>{liveNow.course?.title}</div>
@@ -131,7 +131,9 @@ export default function TeacherLivePage() {
       <h2 className="h2" style={{ marginBottom: 16 }}>Scheduled</h2>
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 36 }}>
         {isLoading ? (
-          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Loading…</div>
+          <div className="card-pad" aria-busy="true" aria-label="Loading sessions">
+            <SkeletonRows count={4} action />
+          </div>
         ) : upcoming.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center' }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>No scheduled sessions yet</div>
@@ -142,7 +144,7 @@ export default function TeacherLivePage() {
           </div>
         ) : (
           upcoming.map((u: LiveClass, i: number) => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', borderBottom: i < upcoming.length - 1 ? '1px solid var(--line)' : '0' }}>
+            <div key={u.id} className="stack-row" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', borderBottom: i < upcoming.length - 1 ? '1px solid var(--line)' : '0' }}>
               {u.scheduled_at && (
                 <div style={{ width: 52, textAlign: 'center', flexShrink: 0 }}>
                   <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -151,7 +153,7 @@ export default function TeacherLivePage() {
                   <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>{new Date(u.scheduled_at).getDate()}</div>
                 </div>
               )}
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="stack-row-main" style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3 }}>{u.title}</div>
                 <div className="muted" style={{ fontSize: 12 }}>
                   {u.course?.title}

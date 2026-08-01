@@ -1,7 +1,7 @@
 'use client'
 import { use } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft } from '@/components/ui'
+import { ArrowLeft, SkeletonForm } from '@/components/ui'
 import { QuizBuilder } from '@/components/teacher/QuizBuilder'
 import { useQuiz } from '@/hooks/assessment/useQuiz'
 
@@ -11,7 +11,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
   const { data: quiz, isLoading, isError } = useQuiz(id)
 
   if (isLoading) {
-    return <div className="muted card-pad">Loading quiz…</div>
+    return <SkeletonForm fields={5} />
   }
 
   if (isError || !quiz) {

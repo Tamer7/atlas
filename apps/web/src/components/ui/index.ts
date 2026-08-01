@@ -9,4 +9,14 @@ export { SegControl } from './SegControl'
 export { CourseThumb } from './CourseThumb'
 export { Toggle } from './Toggle'
 export { Sparkline } from './Sparkline'
+export { Spinner } from './Spinner'
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonCard,
+  SkeletonRows,
+  SkeletonTable,
+  SkeletonForm,
+  SkeletonPageHead,
+} from './Skeleton'
 export * from './Icons'

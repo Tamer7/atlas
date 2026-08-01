@@ -22,7 +22,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ['auth', 'me'],
     queryFn: getMe,
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    // Identity is the one thing that must not go stale. It was cached for five
+    // minutes with no revalidation, so a tab kept rendering the previous user's
+    // role after the session was replaced elsewhere (another tab signing in, an
+    // invitation being accepted). Re-check on focus and on reconnect so a tab
+    // corrects itself the moment you return to it.
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   return (

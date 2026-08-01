@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Avatar, Badge } from '@/components/ui'
+import { Avatar, Badge, Skeleton } from '@/components/ui'
 import {
   useAdminUsers,
   useDeactivateUser,
@@ -40,12 +40,14 @@ export default function AdminUsersPage() {
           <div className="crumbs">Administration</div>
           <h1 className="h1">Users</h1>
         </div>
-        <Link href="/admin/users/new" className="btn btn-brand">
-          Add user
-        </Link>
+        <div className="page-head-actions">
+          <Link href="/admin/users/new" className="btn btn-brand">
+            Add user
+          </Link>
+        </div>
       </div>
 
-      <div className="row" style={{ gap: 10, marginBottom: 16 }}>
+      <div className="row admin-filters" style={{ gap: 10, marginBottom: 16 }}>
         <input
           className="input"
           placeholder="Search name or email"
@@ -86,7 +88,22 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {isLoading && <p className="muted">Loading users…</p>}
+      {isLoading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }} aria-busy="true" aria-label="Loading users">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="card row" style={{ gap: 12, alignItems: 'center', padding: 14 }}>
+              <Skeleton w={32} h={32} circle />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <Skeleton w={`${34 + (i * 9) % 22}%`} h={13} />
+                <Skeleton w={`${46 + (i * 13) % 24}%`} h={11} />
+              </div>
+              <Skeleton w={62} h={22} r="var(--r-pill)" />
+              <Skeleton w={70} h={22} r="var(--r-pill)" />
+              <Skeleton w={96} h={36} r="var(--r-md)" />
+            </div>
+          ))}
+        </div>
+      )}
       {isError && <p className="muted">Could not load users.</p>}
 
       {!isLoading && !isError && users.length === 0 && (
@@ -97,11 +114,11 @@ export default function AdminUsersPage() {
         {users.map(user => (
           <div
             key={user.id}
-            className="card row"
+            className="card row stack-row"
             style={{ gap: 12, alignItems: 'center', padding: 14 }}
           >
             <Avatar name={user.name} />
-            <div style={{ flex: 1 }}>
+            <div className="stack-row-main" style={{ flex: 1 }}>
               <Link href={`/admin/users/${user.id}`}>{user.name}</Link>
               <div className="muted">{user.email}</div>
             </div>

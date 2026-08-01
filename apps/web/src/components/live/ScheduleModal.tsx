@@ -72,7 +72,7 @@ export function ScheduleModal({ onClose }: { onClose: () => void }) {
             </select>
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="g g-sm g-2">
             <Field label="Date"><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} /></Field>
             <Field label="Time"><input className="input" type="time" value={time} onChange={e => setTime(e.target.value)} /></Field>
           </div>

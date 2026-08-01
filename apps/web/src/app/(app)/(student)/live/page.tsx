@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { Video, Play, Clock } from '@/components/ui'
+import { Video, Play, Clock, SkeletonCard } from '@/components/ui'
 import { statusBadge } from '@/components/live/liveUtils'
 import { useStudentLiveClasses } from '@/hooks/live/useLiveClasses'
 import type { LiveClass } from '@/lib/api/live'
@@ -23,8 +23,8 @@ export default function LiveClassesPage() {
 
       {liveNow && (
         <div className="card elev" style={{ padding: 0, overflow: 'hidden', marginBottom: 28 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr' }}>
-            <div style={{ padding: 32 }}>
+          <div className="dash-hero">
+            <div className="dash-hero-body">
               <span className="live-pill-sm" style={{ marginBottom: 16 }}>LIVE NOW</span>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.1, margin: '14px 0 8px' }}>
                 {liveNow.title}
@@ -36,7 +36,7 @@ export default function LiveClassesPage() {
                 <Video size={16} /> Join live class
               </button>
             </div>
-            <div style={{ position: 'relative', minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--brand)' }}>
+            <div className="dash-hero-art" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--brand)' }}>
               <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 60% 40%, rgba(255,255,255,.18), transparent 55%)' }} />
               <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'rgba(255,255,255,.92)', display: 'grid', placeItems: 'center', position: 'relative', boxShadow: '0 12px 40px rgba(0,0,0,.3)' }}>
                 <Play size={30} color="#14130F" />
@@ -48,14 +48,16 @@ export default function LiveClassesPage() {
 
       <h2 className="h2" style={{ marginBottom: 16 }}>Upcoming sessions</h2>
       {isLoading ? (
-        <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Loading…</div>
+        <div className="g g-cards" aria-busy="true" aria-label="Loading sessions">
+          {Array.from({ length: 3 }, (_, i) => <SkeletonCard key={i} lines={1} />)}
+        </div>
       ) : upcoming.length === 0 ? (
         <div className="card" style={{ padding: 48, textAlign: 'center' }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>No upcoming sessions</div>
           <div className="muted" style={{ fontSize: 13 }}>Your teacher will schedule live classes that appear here.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+        <div className="g g-cards">
           {upcoming.map((u: LiveClass) => (
             <div key={u.id} className="live-card">
               <div className="live-card-thumb" style={{ background: 'var(--brand)' }}>

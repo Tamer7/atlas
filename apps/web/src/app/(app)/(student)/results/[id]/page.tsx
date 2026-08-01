@@ -50,7 +50,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
           <div className="crumbs">English B2 · Module 3</div>
           <h1 className="h2">Quiz results · Mixed Conditionals</h1>
         </div>
-        <div className="row">
+        <div className="page-head-actions row">
           <button className="btn btn-secondary" onClick={() => router.push('/courses/1')}>
             Back to course
           </button>

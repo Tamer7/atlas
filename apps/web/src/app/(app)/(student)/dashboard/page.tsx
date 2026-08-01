@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Clock, ArrowRight, Video, CalendarDays, ClipboardList } from 'lucide-react'
-import { Progress, Badge, CourseThumb } from '@/components/ui'
+import { Progress, Badge, CourseThumb, Skeleton, SkeletonCard, SkeletonRows } from '@/components/ui'
 import { useCourses } from '@/hooks/courses/useCourses'
 import { useStudentLiveClasses } from '@/hooks/live/useLiveClasses'
 import { useDueAssignments } from '@/hooks/profile/useProfile'
@@ -31,10 +31,14 @@ function formatDue(iso: string | null): string {
 export default function DashboardPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { data: courses = [] } = useCourses()
-  const { data: liveClasses = [] } = useStudentLiveClasses()
-  const { data: dueAssignments = [] } = useDueAssignments()
-  const { data: schedule = [] } = useMySchedule()
+  const { data: courses = [], isLoading: coursesLoading } = useCourses()
+  const { data: liveClasses = [], isLoading: liveLoading } = useStudentLiveClasses()
+  const { data: dueAssignments = [], isLoading: dueLoading } = useDueAssignments()
+  const { data: schedule = [], isLoading: scheduleLoading } = useMySchedule()
+
+  // Each panel waits on its own query, so the fast ones paint immediately
+  // instead of the whole page blocking on the slowest request.
+  const todayLoading = liveLoading || scheduleLoading
 
   const firstName = user?.name?.split(' ')[0] ?? 'there'
   const upNext = courses[0]
@@ -65,10 +69,27 @@ export default function DashboardPage() {
       </div>
 
       {/* Hero — pick up where you left off */}
-      {upNext ? (
+      {coursesLoading ? (
+        <div className="card elev" style={{ padding: 0, overflow: 'hidden', marginBottom: 32 }} aria-busy="true">
+          <div className="dash-hero">
+            <div className="dash-hero-body">
+              <Skeleton w={150} h={11} style={{ marginBottom: 14 }} />
+              <Skeleton w="72%" h={30} style={{ marginBottom: 12 }} />
+              <Skeleton w="40%" h={13} style={{ marginBottom: 22 }} />
+              <Skeleton w="55%" h={11} style={{ marginBottom: 18 }} />
+              <Skeleton h={10} r="var(--r-pill)" />
+              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+                <Skeleton w={150} h={44} r="var(--r-md)" />
+                <Skeleton w={140} h={44} r="var(--r-md)" />
+              </div>
+            </div>
+            <Skeleton className="dash-hero-art" r={0} />
+          </div>
+        </div>
+      ) : upNext ? (
         <div className="card elev" style={{ padding: 0, overflow: 'hidden', marginBottom: 32 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr' }}>
-            <div style={{ padding: 32 }}>
+          <div className="dash-hero">
+            <div className="dash-hero-body">
               <div className="eyebrow" style={{ marginBottom: 12 }}>
                 <Sparkles size={12} style={{ verticalAlign: '-2px' }} /> Pick up where you left off
               </div>
@@ -92,9 +113,9 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="grad-1" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 28, minHeight: 260 }}>
+            <div className="grad-1 dash-hero-art" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 28 }}>
               <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,.18), transparent 50%)' }} />
-              <div style={{ position: 'absolute', top: -40, right: -40, fontFamily: 'var(--font-display)', fontSize: 280, lineHeight: 1, color: 'rgba(255,255,255,.15)', userSelect: 'none' }}>
+              <div className="dash-hero-glyph" aria-hidden="true">
                 {upNext.title[0]}
               </div>
               <div style={{ position: 'relative', color: '#fff' }}>
@@ -116,7 +137,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="g g-lg g-split">
         {/* In progress */}
         <div>
           <div className="between" style={{ marginBottom: 16 }}>
@@ -125,12 +146,16 @@ export default function DashboardPage() {
               View all <ArrowRight size={12} />
             </button>
           </div>
-          {courses.length === 0 ? (
+          {coursesLoading ? (
+            <div className="g g-cards-sm" aria-busy="true">
+              {Array.from({ length: 2 }, (_, i) => <SkeletonCard key={i} lines={1} />)}
+            </div>
+          ) : courses.length === 0 ? (
             <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
               No courses enrolled yet.
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="g g-cards-sm">
               {courses.map(c => (
                 <button
                   key={c.id}
@@ -165,7 +190,9 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="card card-pad">
-              {liveNow.length === 0 && liveToday.length === 0 && todaySlots.length === 0 ? (
+              {todayLoading ? (
+                <SkeletonRows count={3} />
+              ) : liveNow.length === 0 && liveToday.length === 0 && todaySlots.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--muted)', fontSize: 13 }}>
                   No classes today.
                 </div>
@@ -226,7 +253,9 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="card card-pad">
-              {dueSoon.length === 0 ? (
+              {dueLoading ? (
+                <SkeletonRows count={3} action />
+              ) : dueSoon.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--muted)', fontSize: 13 }}>
                   Nothing due right now.
                 </div>

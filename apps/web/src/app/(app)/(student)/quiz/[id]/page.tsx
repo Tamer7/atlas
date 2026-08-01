@@ -1,7 +1,7 @@
 'use client'
 import { use, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Badge, Clock, ArrowLeft, ArrowRight, Flag, Check, Sparkle } from '@/components/ui'
+import { Badge, Clock, ArrowLeft, ArrowRight, Flag, Check, Sparkle, Skeleton } from '@/components/ui'
 import { MatchPairs } from '@/components/quiz/MatchPairs'
 import { useQuiz } from '@/hooks/assessment/useQuiz'
 import { useAttempt, useSaveAnswers, useStartAttempt, useSubmitAttempt } from '@/hooks/assessment/useAttempt'
@@ -111,7 +111,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
   }
 
   if (quizLoading || (!attemptId && !startAttempt.isError)) {
-    return <div className="muted card-pad">Loading quiz…</div>
+    return <QuizSkeleton />
   }
 
   if (quizError || !quiz) {
@@ -162,7 +162,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
           <div className="crumbs">Quiz</div>
           <h1 className="h2">{quiz.title}</h1>
         </div>
-        <div className="row">
+        <div className="page-head-actions row">
           <div className="row" style={{ color: 'var(--muted)', fontSize: 13 }}>
             <Clock size={14} />
             {quiz.time_limit_minutes ? `~${quiz.time_limit_minutes} min` : 'No time limit'}
@@ -279,7 +279,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
           )}
 
           {q.type === 'tf' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="g g-sm g-2">
               {([true, false] as const).map(v => (
                 <div
                   key={String(v)}
@@ -409,6 +409,37 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               )
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function QuizSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading quiz">
+      <div className="page-head">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Skeleton w={54} h={11} />
+          <Skeleton w={300} h={24} />
+        </div>
+      </div>
+      <div className="quiz-shell">
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+            <Skeleton w={124} h={11} />
+            <Skeleton w={86} h={11} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4 }}>
+            {Array.from({ length: 8 }, (_, i) => <Skeleton key={i} h={5} r="var(--r-pill)" />)}
+          </div>
+        </div>
+        <Skeleton w="85%" h={20} style={{ marginBottom: 10 }} />
+        <Skeleton w="55%" h={20} style={{ marginBottom: 26 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} h={56} r="var(--r-md)" />
+          ))}
         </div>
       </div>
     </div>

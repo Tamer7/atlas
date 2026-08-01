@@ -485,7 +485,7 @@ export function QuizBuilder({ quiz }: { quiz?: Quiz }) {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 24, alignItems: 'start' }}>
+    <div className="g g-lg g-aside">
       {/* Main content */}
       <div>
         {/* Header */}

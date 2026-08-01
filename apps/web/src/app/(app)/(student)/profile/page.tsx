@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { GraduationCap, MessageSquareText } from 'lucide-react'
-import { Avatar, Badge } from '@/components/ui'
+import { Avatar, Badge, SkeletonTable, SkeletonRows } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMyGrades, useMyComments } from '@/hooks/profile/useProfile'
 import type { Grade } from '@/types/profile'
@@ -49,7 +49,7 @@ export default function StudentProfilePage() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="g g-lg g-split">
         {/* Grades */}
         <div>
           <h2 className="h2" style={{ marginBottom: 12 }}>
@@ -58,12 +58,13 @@ export default function StudentProfilePage() {
           </h2>
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             {gradesLoading ? (
-              <div className="muted" style={{ padding: 20, fontSize: 13 }}>Loading…</div>
+              <SkeletonTable rows={5} cols={5} />
             ) : grades.length === 0 ? (
               <div className="muted" style={{ padding: 20, fontSize: 13 }}>
                 No graded work yet. Your quiz results will appear here.
               </div>
             ) : (
+              <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
@@ -95,6 +96,7 @@ export default function StudentProfilePage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -106,7 +108,9 @@ export default function StudentProfilePage() {
             Comments from your teachers
           </h2>
           {commentsLoading ? (
-            <div className="card card-pad muted" style={{ fontSize: 13 }}>Loading…</div>
+            <div className="card card-pad">
+              <SkeletonRows count={3} avatar />
+            </div>
           ) : comments.length === 0 ? (
             <div className="card card-pad muted" style={{ fontSize: 13 }}>
               No comments yet. Feedback from your teachers will show up here.

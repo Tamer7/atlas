@@ -10,6 +10,7 @@ use Agence104\LiveKit\VideoGrant;
 use App\Models\LiveClass;
 use App\Models\User;
 use App\Modules\Course\Models\CourseScheduleSlot;
+use App\Modules\Course\Repositories\Contracts\CourseRepositoryInterface;
 use App\Modules\Course\Repositories\Contracts\ScheduleRepositoryInterface;
 use App\Modules\Enrollment\Repositories\Contracts\EnrollmentRepositoryInterface;
 use App\Modules\Live\Repositories\Contracts\LiveClassRepositoryInterface;
@@ -27,7 +28,33 @@ class LiveService
         private readonly LiveClassRepositoryInterface $repo,
         private readonly EnrollmentRepositoryInterface $enrollmentRepo,
         private readonly ScheduleRepositoryInterface $scheduleRepo,
+        private readonly CourseRepositoryInterface $courseRepo,
     ) {}
+
+    /**
+     * Guards courses/{courseId}/live-classes: only the course's instructor,
+     * an enrolled student, or an admin may see its classes (room_name and
+     * recording_url are public object-storage URLs, so this list must not
+     * be readable by anyone who merely knows/guesses a course id).
+     */
+    public function assertCanAccessCourse(string $courseId, User $user): void
+    {
+        if ($user->hasRole('admin')) {
+            return;
+        }
+
+        $course = $this->courseRepo->find($courseId);
+
+        if ($course && $course->instructor_id === $user->id) {
+            return;
+        }
+
+        if ($this->enrollmentRepo->isEnrolled($user, $courseId)) {
+            return;
+        }
+
+        throw new AuthorizationException('You do not have access to this course.');
+    }
 
     /**
      * Lazy materialisation entry points: there is no cron or queue worker in
@@ -230,7 +257,14 @@ class LiveService
             ]);
 
             $client = new EgressServiceClient($host, $key, $secret);
-            $info   = $client->startRoomCompositeEgress($class->room_name, 'speaker-dark', $output);
+            // 'grid-dark', not 'speaker-dark'. The speaker layout renders the
+            // *dominant speaker*, which LiveKit picks from audio activity — so
+            // a quiet or muted teacher produces a grey frame with nothing in
+            // it, and only a screen share (which the template promotes
+            // regardless) ever appeared. Grid composites every published video
+            // track, so the camera shows immediately and a screen share still
+            // takes over when one starts.
+            $info   = $client->startRoomCompositeEgress($class->room_name, 'grid-dark', $output);
 
             return $info->getEgressId();
         } catch (\Throwable $e) {

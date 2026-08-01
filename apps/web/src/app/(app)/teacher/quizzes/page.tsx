@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash, ListChecks } from 'lucide-react'
-import { Badge } from '@/components/ui'
+import { Badge, SkeletonPageHead, SkeletonRows } from '@/components/ui'
 import { useTeacherQuizzes, useDeleteQuiz } from '@/hooks/assessment/useQuizzes'
 
 export default function TeacherQuizzesPage() {
@@ -10,7 +10,14 @@ export default function TeacherQuizzesPage() {
   const { data: quizzes = [], isLoading, isError } = useTeacherQuizzes()
 
   if (isLoading) {
-    return <div className="muted card-pad">Loading quizzes…</div>
+    return (
+      <div aria-busy="true" aria-label="Loading quizzes">
+        <SkeletonPageHead actions={1} />
+        <div className="card card-pad">
+          <SkeletonRows count={5} action />
+        </div>
+      </div>
+    )
   }
 
   if (isError) {
@@ -27,9 +34,11 @@ export default function TeacherQuizzesPage() {
             Create and manage quizzes for your courses. Published quizzes appear on the course page for students.
           </p>
         </div>
-        <button className="btn btn-brand" onClick={() => router.push('/teacher/quizzes/new')}>
-          <Plus size={14} /> New quiz
-        </button>
+        <div className="page-head-actions">
+          <button className="btn btn-brand" onClick={() => router.push('/teacher/quizzes/new')}>
+            <Plus size={14} /> New quiz
+          </button>
+        </div>
       </div>
 
       {quizzes.length === 0 ? (
@@ -74,6 +83,7 @@ function QuizRow({
 
   return (
     <div
+      className="stack-row"
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -82,7 +92,7 @@ function QuizRow({
         borderBottom: isLast ? 0 : '1px solid var(--line)',
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="stack-row-main" style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{quiz.title}</div>
         <div className="row muted" style={{ fontSize: 12, gap: 8 }}>
           <span>{quiz.course_title ?? 'Course'}</span>

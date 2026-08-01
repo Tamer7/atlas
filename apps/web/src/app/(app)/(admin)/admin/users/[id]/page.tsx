@@ -1,6 +1,6 @@
 'use client'
 import { use, useState } from 'react'
-import { Badge } from '@/components/ui'
+import { Badge, SkeletonForm } from '@/components/ui'
 import {
   useAdminUser,
   useSendPasswordReset,
@@ -24,7 +24,7 @@ export default function AdminUserDetailPage({
     { status: 'success' } | { status: 'error'; message: string } | null
   >(null)
 
-  if (isLoading) return <p className="muted">Loading…</p>
+  if (isLoading) return <SkeletonForm fields={4} maxWidth={560} />
   if (isError || !user) return <p className="muted">Could not load this user.</p>
 
   const changeRole = async (role: AdminRole) => {

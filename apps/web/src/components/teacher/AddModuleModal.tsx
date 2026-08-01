@@ -41,7 +41,7 @@ export function AddModuleModal({ courseId, onClose }: AddModuleModalProps) {
       <form
         onSubmit={handleSubmit}
         className="card card-pad-lg"
-        style={{ position: 'relative', width: 480, zIndex: 1 }}
+        style={{ position: 'relative', width: 480, maxWidth: 'calc(100vw - 32px)', zIndex: 1 }}
       >
         <h2 className="h2" style={{ marginBottom: 20 }}>Add module</h2>
 

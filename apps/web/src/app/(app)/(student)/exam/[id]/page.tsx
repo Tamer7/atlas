@@ -94,13 +94,8 @@ export default function ExamPage({ params }: { params: Promise<{ id: string }> }
           </p>
 
           <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 12,
-              marginBottom: 28,
-              textAlign: 'left',
-            }}
+            className="g g-sm g-3"
+            style={{ marginBottom: 28, textAlign: 'left' }}
           >
             <div className="card card-pad" style={{ background: 'var(--paper-2)', border: 0 }}>
               <Clock size={16} color="var(--brand)" />
@@ -234,7 +229,7 @@ export default function ExamPage({ params }: { params: Promise<{ id: string }> }
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 28 }}>
+      <div className="g g-lg g-aside">
         {/* Question area */}
         <div>
           <div className="card card-pad-lg">
@@ -285,7 +280,7 @@ export default function ExamPage({ params }: { params: Promise<{ id: string }> }
 
             {/* True / False */}
             {q.type === 'tf' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="g g-sm g-2">
                 {([true, false] as const).map(v => (
                   <div
                     key={String(v)}

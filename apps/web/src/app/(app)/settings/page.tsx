@@ -25,7 +25,7 @@ function ProfileTab({ role }: { role: AppRole }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="g g-2" style={{ gap: 16 }}>
           <Field label="Full name"><input className="input" defaultValue={name} /></Field>
           <Field label="Display name"><input className="input" defaultValue={name.split(' ')[0]} /></Field>
           <Field label="Email"><input className="input" defaultValue={email} /></Field>
@@ -165,7 +165,8 @@ function NotificationsTab() {
     <section className="card card-pad-lg">
       <h3 className="h3" style={{ marginBottom: 4 }}>Notifications</h3>
       <p className="muted" style={{ fontSize: 13, marginBottom: 20 }}>Choose how Atlas reaches you.</p>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="table-wrap">
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 440 }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--line)' }}>
             <th style={{ textAlign: 'left', padding: '8px 0', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}></th>
@@ -188,6 +189,7 @@ function NotificationsTab() {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   )
 }
@@ -288,9 +290,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 32 }}>
-        {/* Vertical tab sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div className="settings-shell">
+        {/* Vertical tab sidebar — becomes a horizontal scroller on mobile */}
+        <div className="settings-tabs">
           {tabs.map(t => (
             <button
               key={t.id}
